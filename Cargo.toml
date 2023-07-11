@@ -9,10 +9,6 @@ edition = "2021"
 generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", features = ["serde", "curve-secp256k1"] }
 generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", features = ["serde"] }
 
-round-based-ing = { git = "https://github.com/Zengo-X/round-based-protocol", branch = "round-based2" }
-ecdsa-mpc = { git = "https://github.com/ing-bank/threshold-signatures" }
-curv = { package = "curv-kzen", version = "0.2.8", features = ["ecc", "ec_secp256k1"] }
-
 ciborium = "0.2"
 serde = "1"
 rand_core = "0.6"
