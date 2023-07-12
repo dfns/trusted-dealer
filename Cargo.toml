@@ -10,8 +10,9 @@ generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", fe
 generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", features = ["serde"] }
 
 ciborium = "0.2"
-serde = "1"
+openssl = { version = "0.10", default-features = false }
 rand_core = "0.6"
+serde = "1"
 
 [dev-dependencies]
 cggmp21 = { git = "https://github.com/dfns-labs/cggmp21", features = ["spof"] }

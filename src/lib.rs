@@ -83,13 +83,45 @@ pub trait ApiUser {
     fn send_shards(&mut self, shares: &HashMap<Identity, Vec<u8>>) -> std::io::Result<()>;
 }
 
+pub struct EncryptionKey {
+    certs: openssl::stack::Stack<openssl::x509::X509>,
+}
+
+impl EncryptionKey {
+    pub fn open(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
+        use std::io::Read;
+        let mut cert_file = std::fs::File::open(path)?;
+        let mut cert_bytes = Vec::new();
+        let _ = cert_file.read_exact(&mut cert_bytes)?;
+        Self::from_bytes(&cert_bytes)
+    }
+
+    pub fn from_bytes(cert_bytes: &[u8]) -> std::io::Result<Self> {
+        let cert = openssl::x509::X509::from_pem(&cert_bytes)?;
+        let mut certs = openssl::stack::Stack::new()?;
+        certs.push(cert)?;
+
+        Ok(Self { certs })
+    }
+
+    pub fn encrypt(&self, input: &[u8]) -> std::io::Result<Vec<u8>> {
+        let bundle = openssl::pkcs7::Pkcs7::encrypt(
+            self.certs.as_ref(),
+            input,
+            openssl::symm::Cipher::aes_256_cbc(),
+            openssl::pkcs7::Pkcs7Flags::empty(),
+        )?;
+        Ok(bundle.to_pem()?)
+    }
+}
+
 pub fn send_all<Api: ApiUser>(api: &mut Api, shards: &[Share<Secp256k1>]) -> std::io::Result<()> {
     let mut signers = api.get_signers()?;
     signers.sort_unstable_by(|s1, s2| s1.identity.cmp(&s2.identity));
     let mut dests = HashMap::new();
     for (signer, shard) in signers.into_iter().zip(shards) {
-        let shard = shard.to_bytes();
-        // TODO: encrypt shard
+        let key = EncryptionKey::from_bytes(&signer.public_key)?;
+        let shard = key.encrypt(&shard.to_bytes())?;
         dests.insert(signer.identity, shard);
     }
     api.send_shards(&dests)
