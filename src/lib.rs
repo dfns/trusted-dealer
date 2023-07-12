@@ -1,7 +1,14 @@
+#[cfg(test)]
+mod test;
+
+use std::collections::HashMap;
+
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
-#[derive(Debug, serde::Serialize)]
+pub use generic_ec::curves::Secp256k1;
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "")]
 pub struct Share<E: Curve> {
     // 2 bytes integer representation
@@ -21,15 +28,6 @@ impl<E: Curve> Share<E> {
         buffer
     }
 }
-
-// in gg18 we have:
-// key_params - t and n, well-known
-// own_party_index - i
-// secret_share, public_key
-// own_he_keys - get from decryption_key and encryption_keys[i]
-// party_he_keys - get from encryption_keys
-// party_to_point_map - maps i to i+1
-// range_proof_setups - from range_proofs and range_proof_private
 
 pub fn shard<E: Curve, R: RngCore + CryptoRng>(
     shared_secret_key: &SecretScalar<E>,
@@ -72,20 +70,27 @@ pub fn shard<E: Curve, R: RngCore + CryptoRng>(
         .collect()
 }
 
-pub fn test_scalar() -> SecretScalar<TheCurve> {
-    SecretScalar::random(&mut rand_core::OsRng)
+type Identity = Vec<u8>;
+
+#[derive(Clone)]
+pub struct Signer {
+    pub public_key: Vec<u8>,
+    pub identity: Identity,
 }
 
-pub type TheCurve = generic_ec::curves::Secp256k1;
+pub trait ApiUser {
+    fn get_signers(&mut self) -> std::io::Result<Vec<Signer>>;
+    fn send_shards(&mut self, shares: &HashMap<Identity, Vec<u8>>) -> std::io::Result<()>;
+}
 
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test() {
-        let shards = super::shard(&super::test_scalar(), 5, 3, &mut rand_core::OsRng);
-        assert_eq!(shards.len(), 5);
-        for shard in &shards {
-            assert_eq!(shard.public_shares.len(), 5);
-        }
+pub fn send_all<Api: ApiUser>(api: &mut Api, shards: &[Share<Secp256k1>]) -> std::io::Result<()> {
+    let mut signers = api.get_signers()?;
+    signers.sort_unstable_by(|s1, s2| s1.identity.cmp(&s2.identity));
+    let mut dests = HashMap::new();
+    for (signer, shard) in signers.into_iter().zip(shards) {
+        let shard = shard.to_bytes();
+        // TODO: encrypt shard
+        dests.insert(signer.identity, shard);
     }
+    api.send_shards(&dests)
 }

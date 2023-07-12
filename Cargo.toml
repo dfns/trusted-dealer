@@ -12,3 +12,6 @@ generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m"
 ciborium = "0.2"
 serde = "1"
 rand_core = "0.6"
+
+[dev-dependencies]
+cggmp21 = { git = "https://github.com/dfns-labs/cggmp21", features = ["spof"] }
