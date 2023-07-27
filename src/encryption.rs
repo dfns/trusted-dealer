@@ -41,7 +41,7 @@ impl DecryptionKey {
         let mut chacha_nonce = ChaChaNonce::default();
         buffer.read_from_back(&mut chacha_nonce)?;
 
-        // Derive a `chacha_key` from `ehp_key`
+        // Derive a `chacha_key` from `eph_key`
         let mut chacha_key = ChaChaKey::default();
         let shared_secret = eph_pub * &self.0;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
