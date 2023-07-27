@@ -1,4 +1,4 @@
-use chacha20poly1305::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
+use aes_gcm::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
 use rand_core::{CryptoRng, RngCore};
 
 /// We fix our encryption scheme to secp256k1 curve
@@ -11,10 +11,10 @@ type Hkdf = hkdf::Hkdf<sha2::Sha256>;
 const HKDF_SALT: &[u8] = b"DFNS_KEY_IMPORT";
 const HKDF_KEY_LABEL: &[u8] = b"ENCRYPTION_KEY";
 
-/// Symmetric encryption scheme is fixed to XChaCha20Poly1305
-type ChaCha = chacha20poly1305::XChaCha20Poly1305;
-type ChaChaKey = chacha20poly1305::Key;
-type ChaChaNonce = chacha20poly1305::XNonce;
+/// Symmetric encryption scheme is fixed to AES256-GCM
+type Aes = aes_gcm::Aes256Gcm;
+type AesKey = aes_gcm::Key<Aes>;
+type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
@@ -37,19 +37,17 @@ impl DecryptionKey {
         buffer.read_from_back(&mut eph_pub)?;
         let eph_pub = Point::from_bytes(&eph_pub).map_err(|_| Error)?;
 
-        // Read `chacha_nonce`
-        let mut chacha_nonce = ChaChaNonce::default();
-        buffer.read_from_back(&mut chacha_nonce)?;
-
         // Derive a `chacha_key` from `eph_key`
-        let mut chacha_key = ChaChaKey::default();
+        let mut chacha_key = AesKey::default();
         let shared_secret = eph_pub * &self.0;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut chacha_key)
             .map_err(|_| Error)?;
 
         // Decrypt `buffer` using `chacha_key`
-        let chacha = ChaCha::new(&chacha_key);
+        let chacha = Aes::new(&chacha_key);
+        // Nonce is zeroes string
+        let chacha_nonce = AesNonce::default();
         chacha
             .decrypt_in_place(&chacha_nonce, associated_data, buffer)
             .map_err(|_| Error)?;
@@ -71,22 +69,20 @@ impl EncryptionKey {
         debug_assert_eq!(eph_pub.len(), EPH_KEY_SIZE);
 
         // Derive a `chacha_key` from `ehp_key`
-        let mut chacha_key = ChaChaKey::default();
+        let mut chacha_key = AesKey::default();
         let shared_secret = self.0 * &eph_key;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut chacha_key)
             .map_err(|_| Error)?;
 
         // Encrypt `buffer` using `chacha_key`
-        let chacha = ChaCha::new(&chacha_key);
-        let chacha_nonce = ChaCha::generate_nonce(rng);
+        let chacha = Aes::new(&chacha_key);
+        // Nonce is zeroes string
+        let chacha_nonce = AesNonce::default();
 
         chacha
             .encrypt_in_place(&chacha_nonce, associated_data, buffer)
             .map_err(|_| Error)?;
-
-        // Append `chacha_nonce` to the buffer
-        buffer.extend_from_slice(&chacha_nonce).map_err(|_| Error)?;
 
         // Append `eph_pub` to the buffer
         buffer.extend_from_slice(&eph_pub).map_err(|_| Error)?;
