@@ -37,19 +37,18 @@ impl DecryptionKey {
         buffer.read_from_back(&mut eph_pub)?;
         let eph_pub = Point::from_bytes(&eph_pub).map_err(|_| Error)?;
 
-        // Derive a `chacha_key` from `eph_key`
-        let mut chacha_key = AesKey::default();
+        // Derive a `aes_key` from `eph_key`
+        let mut aes_key = AesKey::default();
         let shared_secret = eph_pub * &self.0;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
-        kdf.expand(HKDF_KEY_LABEL, &mut chacha_key)
+        kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
             .map_err(|_| Error)?;
 
-        // Decrypt `buffer` using `chacha_key`
-        let chacha = Aes::new(&chacha_key);
+        // Decrypt `buffer` using `aes_key`
+        let aes = Aes::new(&aes_key);
         // Nonce is zeroes string
-        let chacha_nonce = AesNonce::default();
-        chacha
-            .decrypt_in_place(&chacha_nonce, associated_data, buffer)
+        let aes_nonce = AesNonce::default();
+        aes.decrypt_in_place(&aes_nonce, associated_data, buffer)
             .map_err(|_| Error)?;
 
         Ok(())
@@ -68,20 +67,19 @@ impl EncryptionKey {
         let eph_pub = (Point::generator() * &eph_key).to_bytes(true);
         debug_assert_eq!(eph_pub.len(), EPH_KEY_SIZE);
 
-        // Derive a `chacha_key` from `ehp_key`
-        let mut chacha_key = AesKey::default();
+        // Derive a `aes_key` from `ehp_key`
+        let mut aes_key = AesKey::default();
         let shared_secret = self.0 * &eph_key;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
-        kdf.expand(HKDF_KEY_LABEL, &mut chacha_key)
+        kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
             .map_err(|_| Error)?;
 
-        // Encrypt `buffer` using `chacha_key`
-        let chacha = Aes::new(&chacha_key);
+        // Encrypt `buffer` using `aes_key`
+        let aes = Aes::new(&aes_key);
         // Nonce is zeroes string
-        let chacha_nonce = AesNonce::default();
+        let aes_nonce = AesNonce::default();
 
-        chacha
-            .encrypt_in_place(&chacha_nonce, associated_data, buffer)
+        aes.encrypt_in_place(&aes_nonce, associated_data, buffer)
             .map_err(|_| Error)?;
 
         // Append `eph_pub` to the buffer
