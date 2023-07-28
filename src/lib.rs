@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod test;
 
+pub mod encryption;
+
 use std::collections::HashMap;
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
@@ -54,19 +56,20 @@ pub fn shard<E: Curve, R: RngCore + CryptoRng>(
         (pk, shares)
     };
 
-    let public_shares = secret_shares.iter().map(|x| Point::generator() * x).collect::<Vec<Point<E>>>();
+    let public_shares = secret_shares
+        .iter()
+        .map(|x| Point::generator() * x)
+        .collect::<Vec<Point<E>>>();
 
     secret_shares
         .into_iter()
         .zip(0u16..)
-        .map(
-            |(secret_share, i)| Share {
-                i,
-                secret_share,
-                shared_public_key,
-                public_shares: public_shares.clone(),
-            },
-        )
+        .map(|(secret_share, i)| Share {
+            i,
+            secret_share,
+            shared_public_key,
+            public_shares: public_shares.clone(),
+        })
         .collect()
 }
 
