@@ -1,0 +1,47 @@
+name: Rust
+
+on:
+  pull_request:
+    branches: [ "*" ]
+  schedule:
+    - cron: '0 5 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: "true"
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: cargo test
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+    - name: Run clippy
+      run: cargo clippy --all --lib -- -D clippy::all -D clippy::unwrap_used -D clippy::expect_used
+    - name: Run clippy tests
+      run: cargo clippy --tests -- -D clippy::all
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: "true"
+    - name: Install wasm32-unknown-unknown toolchain
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build on wasm32-unknown-unknown
+      run:
+        cargo check -p dfns-key-import --target wasm32-unknown-unknown
+    - name: Install wasm-pack
+      uses: baptiste0928/cargo-install@v1
+      with:
+        crate: wasm-pack
+    - name: wasm-pack an example project
+      run: (cd client; wasm-pack build)
