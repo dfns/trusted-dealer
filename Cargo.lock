@@ -346,6 +346,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfns-key-import"
+version = "0.1.0"
+dependencies = [
+ "dfns-key-import-common",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "dfns-key-import-common"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "cggmp21",
+ "ciborium",
+ "generic-ec",
+ "generic-ec-zkp",
+ "hkdf",
+ "rand_core",
+ "rand_dev",
+ "serde",
+ "sha2",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -541,7 +565,7 @@ dependencies = [
 [[package]]
 name = "generic-ec"
 version = "0.0.0"
-source = "git+https://github.com/dfns-labs/generic-ec?branch=m#0763a7e114c6243f7fa728f7164378297df70a31"
+source = "git+https://github.com/dfns-labs/generic-ec?branch=m#f6ac5f4a8e73eec566964570ac7150f69db87aaf"
 dependencies = [
  "generic-ec-core",
  "generic-ec-curves",
@@ -558,7 +582,7 @@ dependencies = [
 [[package]]
 name = "generic-ec-core"
 version = "0.1.0"
-source = "git+https://github.com/dfns-labs/generic-ec?branch=m#0763a7e114c6243f7fa728f7164378297df70a31"
+source = "git+https://github.com/dfns-labs/generic-ec?branch=m#f6ac5f4a8e73eec566964570ac7150f69db87aaf"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -570,7 +594,7 @@ dependencies = [
 [[package]]
 name = "generic-ec-curves"
 version = "0.1.0"
-source = "git+https://github.com/dfns-labs/generic-ec?branch=m#0763a7e114c6243f7fa728f7164378297df70a31"
+source = "git+https://github.com/dfns-labs/generic-ec?branch=m#f6ac5f4a8e73eec566964570ac7150f69db87aaf"
 dependencies = [
  "elliptic-curve",
  "generic-ec-core",
@@ -584,7 +608,7 @@ dependencies = [
 [[package]]
 name = "generic-ec-zkp"
 version = "0.1.0"
-source = "git+https://github.com/dfns-labs/generic-ec?branch=m#0763a7e114c6243f7fa728f7164378297df70a31"
+source = "git+https://github.com/dfns-labs/generic-ec?branch=m#f6ac5f4a8e73eec566964570ac7150f69db87aaf"
 dependencies = [
  "digest 0.10.7",
  "generic-array",
@@ -1347,22 +1371,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0955b8137a1df6f1a2e9a37d8a6656291ff0297c1a97c24e0d8425fe2312f79a"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "trusted-dealer"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "cggmp21",
- "ciborium",
- "generic-ec",
- "generic-ec-zkp",
- "hkdf",
- "rand_core",
- "rand_dev",
- "serde",
- "sha2",
 ]
 
 [[package]]

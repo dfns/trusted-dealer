@@ -37,6 +37,8 @@ pub fn shard<E: Curve, R: RngCore + CryptoRng>(
     t: u16,
     rng: &mut R,
 ) -> Vec<Share<E>> {
+    // TODO: remove unwrap or return error
+    #[allow(clippy::unwrap_used)]
     let key_shares_indexes = (1..=n)
         .map(|i| generic_ec::NonZero::from_scalar(Scalar::from(i)))
         .collect::<Option<Vec<_>>>()

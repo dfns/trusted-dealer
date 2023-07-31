@@ -35,7 +35,7 @@ impl DecryptionKey {
         // Read `eph_pub`
         let mut eph_pub = [0u8; EPH_KEY_SIZE];
         buffer.read_from_back(&mut eph_pub)?;
-        let eph_pub = Point::from_bytes(&eph_pub).map_err(|_| Error)?;
+        let eph_pub = Point::from_bytes(eph_pub).map_err(|_| Error)?;
 
         // Derive a `aes_key` from `eph_key`
         let mut aes_key = AesKey::default();
