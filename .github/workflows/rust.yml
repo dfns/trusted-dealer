@@ -11,7 +11,7 @@ env:
   CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -28,8 +28,25 @@ jobs:
       run: cargo build
     - name: Run tests
       run: cargo test
+  check-fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
     - name: Check formatting
       run: cargo fmt --all -- --check
+  check-clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: "true"
+    - uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: |
+          ${{ secrets.GENERIC_EC_KEY }}
+          ${{ secrets.CGGMP21_KEY }}
+          ${{ secrets.PAILLIER_ZK_KEY }}
     - name: Run clippy
       run: cargo clippy --all --lib -- -D clippy::all -D clippy::unwrap_used -D clippy::expect_used
     - name: Run clippy tests
