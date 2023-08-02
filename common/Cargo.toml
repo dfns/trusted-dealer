@@ -10,9 +10,9 @@ publish = false
 generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
 generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "alloc"] }
 
-ciborium = "0.2"
 rand_core = { version = "0.6", default-features = false }
 serde = "1"
+hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}
 
 aes-gcm = "0.10"
 hkdf = "0.12"

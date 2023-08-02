@@ -19,16 +19,30 @@ type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
 
-pub struct EncryptionKey(Point);
-pub struct DecryptionKey(SecretScalar);
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct EncryptionKey {
+    version: crate::utils::VersionGuard,
+    point: Point,
+}
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct DecryptionKey {
+    version: crate::utils::VersionGuard,
+    scalar: SecretScalar,
+}
 
 impl DecryptionKey {
     pub fn generate(rng: &mut (impl RngCore + CryptoRng)) -> Self {
-        Self(SecretScalar::random(rng))
+        Self {
+            version: crate::utils::VersionGuard,
+            scalar: SecretScalar::random(rng),
+        }
     }
 
     pub fn encryption_key(&self) -> EncryptionKey {
-        EncryptionKey(Point::generator() * &self.0)
+        EncryptionKey {
+            version: crate::utils::VersionGuard,
+            point: Point::generator() * &self.scalar,
+        }
     }
 
     pub fn decrypt(&self, associated_data: &[u8], buffer: &mut impl Buffer) -> Result<(), Error> {
@@ -39,7 +53,7 @@ impl DecryptionKey {
 
         // Derive a `aes_key` from `eph_key`
         let mut aes_key = AesKey::default();
-        let shared_secret = eph_pub * &self.0;
+        let shared_secret = eph_pub * &self.scalar;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
             .map_err(|_| Error)?;
@@ -69,7 +83,7 @@ impl EncryptionKey {
 
         // Derive a `aes_key` from `ehp_key`
         let mut aes_key = AesKey::default();
-        let shared_secret = self.0 * &eph_key;
+        let shared_secret = self.point * &eph_key;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
             .map_err(|_| Error)?;
@@ -109,6 +123,7 @@ impl<B> BufferExt for B where B: Buffer {}
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
     use rand_core::RngCore;
 
     use super::DecryptionKey;
