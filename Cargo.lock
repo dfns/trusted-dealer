@@ -323,6 +323,7 @@ name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
  "dfns-key-import-common",
+ "serde_json",
  "wasm-bindgen",
 ]
 
