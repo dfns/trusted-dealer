@@ -186,6 +186,9 @@ impl core::fmt::Display for Error {
     }
 }
 
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
 impl From<Reason> for Error {
     fn from(err: Reason) -> Self {
         Error(err)

@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 
@@ -83,6 +83,9 @@ impl core::fmt::Display for Error {
         f.write_str("splitting secret key into key shares failed")
     }
 }
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
 
 #[derive(Debug, serde::Serialize)]
 pub struct SignersInfo {

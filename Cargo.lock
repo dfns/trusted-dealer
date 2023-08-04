@@ -179,7 +179,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "cggmp21"
 version = "0.0.0"
-source = "git+https://github.com/dfns-labs/cggmp21#16138a3b031404512ced92b85644a17450070a4d"
+source = "git+https://github.com/dfns-labs/cggmp21#4117bea4b14249f16364bb68718b3e63ef58bc3d"
 dependencies = [
  "digest 0.10.7",
  "futures",
@@ -854,7 +854,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "paillier-zk"
 version = "0.1.0"
-source = "git+https://github.com/dfns-labs/paillier-zk?branch=m#a2639222e07b38657344c8327cd47ebb01be6eb7"
+source = "git+https://github.com/dfns-labs/paillier-zk?branch=m#14295d15299e86d8349af43332afce648c5825a2"
 dependencies = [
  "generic-ec",
  "libpaillier",
