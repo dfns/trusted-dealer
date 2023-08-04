@@ -19,28 +19,24 @@ type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct EncryptionKey {
-    version: crate::utils::VersionGuard,
     point: Point,
 }
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug)]
 pub struct DecryptionKey {
-    version: crate::utils::VersionGuard,
     scalar: SecretScalar,
 }
 
 impl DecryptionKey {
     pub fn generate(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         Self {
-            version: crate::utils::VersionGuard,
             scalar: SecretScalar::random(rng),
         }
     }
 
     pub fn encryption_key(&self) -> EncryptionKey {
         EncryptionKey {
-            version: crate::utils::VersionGuard,
             point: Point::generator() * &self.scalar,
         }
     }
@@ -48,24 +44,44 @@ impl DecryptionKey {
     pub fn decrypt(&self, associated_data: &[u8], buffer: &mut impl Buffer) -> Result<(), Error> {
         // Read `eph_pub`
         let mut eph_pub = [0u8; EPH_KEY_SIZE];
-        buffer.read_from_back(&mut eph_pub)?;
-        let eph_pub = Point::from_bytes(eph_pub).map_err(|_| Error)?;
+        buffer
+            .read_from_back(&mut eph_pub)
+            .map_err(|_| Reason::Decrypt)?;
+        let eph_pub = Point::from_bytes(eph_pub).map_err(|_| Reason::Decrypt)?;
 
         // Derive a `aes_key` from `eph_key`
         let mut aes_key = AesKey::default();
         let shared_secret = eph_pub * &self.scalar;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
-            .map_err(|_| Error)?;
+            .map_err(|_| Reason::Decrypt)?;
 
         // Decrypt `buffer` using `aes_key`
         let aes = Aes::new(&aes_key);
         // Nonce is zeroes string
         let aes_nonce = AesNonce::default();
         aes.decrypt_in_place(&aes_nonce, associated_data, buffer)
-            .map_err(|_| Error)?;
+            .map_err(|_| Reason::Decrypt)?;
 
         Ok(())
+    }
+
+    pub fn to_bytes(&self) -> [u8; 33] {
+        let mut output = [0u8; 33];
+        output[0] = crate::VERSION;
+        output[1..].copy_from_slice(&self.scalar.as_ref().to_be_bytes());
+        output
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.is_empty() {
+            return Err(Reason::InvalidKey.into());
+        }
+        if bytes[0] != crate::VERSION {
+            return Err(Reason::VersionMismatched(bytes[0]).into());
+        }
+        let scalar = SecretScalar::from_be_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
+        Ok(Self { scalar })
     }
 }
 
@@ -86,7 +102,7 @@ impl EncryptionKey {
         let shared_secret = self.point * &eph_key;
         let kdf = Hkdf::new(Some(HKDF_SALT), &shared_secret.to_bytes(true));
         kdf.expand(HKDF_KEY_LABEL, &mut aes_key)
-            .map_err(|_| Error)?;
+            .map_err(|_| Reason::Encrypt)?;
 
         // Encrypt `buffer` using `aes_key`
         let aes = Aes::new(&aes_key);
@@ -94,25 +110,94 @@ impl EncryptionKey {
         let aes_nonce = AesNonce::default();
 
         aes.encrypt_in_place(&aes_nonce, associated_data, buffer)
-            .map_err(|_| Error)?;
+            .map_err(|_| Reason::Encrypt)?;
 
         // Append `eph_pub` to the buffer
-        buffer.extend_from_slice(&eph_pub).map_err(|_| Error)?;
+        buffer
+            .extend_from_slice(&eph_pub)
+            .map_err(|_| Reason::Encrypt)?;
 
         Ok(())
     }
+
+    pub fn to_bytes(&self) -> [u8; 34] {
+        let mut output = [0u8; 34];
+        output[0] = crate::VERSION;
+        output[1..].copy_from_slice(&self.point.to_bytes(true));
+        output
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.is_empty() {
+            return Err(Reason::InvalidKey.into());
+        }
+        if bytes[0] != crate::VERSION {
+            return Err(Reason::VersionMismatched(bytes[0]).into());
+        }
+        let point = Point::from_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
+        Ok(Self { point })
+    }
 }
 
-/// Encryption / decryption error
+impl serde::Serialize for EncryptionKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        hex::encode(self.to_bytes()).serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for EncryptionKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let encoded_ek = alloc::string::String::deserialize(deserializer)?;
+        let ek_bytes = hex::decode(encoded_ek).map_err(|e| {
+            <D::Error as serde::de::Error>::custom(alloc::format!("malformed hex string: {e}"))
+        })?;
+        Self::from_bytes(&ek_bytes).map_err(|e| {
+            <D::Error as serde::de::Error>::custom(alloc::format!("invalid encryption key: {e}"))
+        })
+    }
+}
+
+/// Describes what went wrong
 #[derive(Debug, Clone, Copy)]
-pub struct Error;
+pub struct Error(Reason);
+
+#[derive(Debug, Clone, Copy)]
+enum Reason {
+    VersionMismatched(u8),
+    InvalidKey,
+    Encrypt,
+    Decrypt,
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error(Reason::VersionMismatched(v)) => f.write_fmt(core::format_args!("parsing failed: version of data (v{v}) doesn't match version supported by the library (v{})", crate::VERSION)),
+            Error(Reason::InvalidKey) => f.write_str("invalid key"),
+            Error(Reason::Encrypt) => f.write_str("encryption error"),
+            Error(Reason::Decrypt) => f.write_str("decryption error"),
+        }
+    }
+}
+
+impl From<Reason> for Error {
+    fn from(err: Reason) -> Self {
+        Error(err)
+    }
+}
 
 trait BufferExt: Buffer {
     /// Copies `buffer[buffer.len() - chunk.len()..]` into the `chunk` and truncates
     /// `chuck.len()` bytes from the buffer.
-    fn read_from_back(&mut self, chunk: &mut [u8]) -> Result<(), Error> {
+    fn read_from_back(&mut self, chunk: &mut [u8]) -> Result<(), ()> {
         if self.len() < chunk.len() {
-            return Err(Error);
+            return Err(());
         }
         chunk.copy_from_slice(&self.as_ref()[self.len() - chunk.len()..]);
         self.truncate(self.len() - chunk.len());
@@ -126,7 +211,7 @@ mod tests {
     use alloc::vec;
     use rand_core::RngCore;
 
-    use super::DecryptionKey;
+    use super::{DecryptionKey, EncryptionKey};
 
     #[test]
     fn keygen_encrypt_decrypt() {
@@ -180,5 +265,23 @@ mod tests {
             let mut ciphertext = ciphertext[0..i].to_vec();
             assert!(dk.decrypt(&[], &mut ciphertext).is_err());
         }
+    }
+
+    #[test]
+    fn serialize_deserialize() {
+        let mut rng = rand_dev::DevRng::new();
+
+        let dk = DecryptionKey::generate(&mut rng);
+        let ek = dk.encryption_key();
+
+        // Serialize and deserialize `dk`
+        let dk_bytes = dk.to_bytes();
+        let dk_deserialized = DecryptionKey::from_bytes(&dk_bytes).unwrap();
+        assert_eq!(dk_deserialized.encryption_key(), ek);
+
+        // Serialize and deserialize `ek`
+        let ek_json = serde_json::to_string(&ek).unwrap();
+        let ek_deserialized: EncryptionKey = serde_json::from_str(&ek_json).unwrap();
+        assert_eq!(ek, ek_deserialized);
     }
 }
