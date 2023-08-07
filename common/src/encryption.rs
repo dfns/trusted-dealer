@@ -1,3 +1,5 @@
+//! Asymmetric encryption scheme
+
 use aes_gcm::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
 use rand_core::{CryptoRng, RngCore};
 
@@ -19,28 +21,33 @@ type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
 
+/// Public encryption key
 #[derive(Debug, PartialEq, Eq)]
 pub struct EncryptionKey {
     point: Point,
 }
+/// Secret decryption key
 #[derive(Debug)]
 pub struct DecryptionKey {
     scalar: SecretScalar,
 }
 
 impl DecryptionKey {
+    /// Generates decryption key
     pub fn generate(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         Self {
             scalar: SecretScalar::random(rng),
         }
     }
 
+    /// Returns a (public) encryption key corresponding to the decryption key
     pub fn encryption_key(&self) -> EncryptionKey {
         EncryptionKey {
             point: Point::generator() * &self.scalar,
         }
     }
 
+    /// Decrypts a ciphertext
     pub fn decrypt(&self, associated_data: &[u8], buffer: &mut impl Buffer) -> Result<(), Error> {
         // Read `eph_pub`
         let mut eph_pub = [0u8; EPH_KEY_SIZE];
@@ -66,6 +73,7 @@ impl DecryptionKey {
         Ok(())
     }
 
+    /// Serializes decryption key to bytes
     pub fn to_bytes(&self) -> [u8; 33] {
         let mut output = [0u8; 33];
         output[0] = crate::VERSION;
@@ -73,6 +81,7 @@ impl DecryptionKey {
         output
     }
 
+    /// Parses decryption key from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());
@@ -86,6 +95,7 @@ impl DecryptionKey {
 }
 
 impl EncryptionKey {
+    /// Encrypts a plaintext
     pub fn encrypt(
         &self,
         rng: &mut (impl RngCore + CryptoRng),
@@ -120,6 +130,7 @@ impl EncryptionKey {
         Ok(())
     }
 
+    /// Serialized encryption key to bytes
     pub fn to_bytes(&self) -> [u8; 34] {
         let mut output = [0u8; 34];
         output[0] = crate::VERSION;
@@ -127,6 +138,7 @@ impl EncryptionKey {
         output
     }
 
+    /// Parses encryption key from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());

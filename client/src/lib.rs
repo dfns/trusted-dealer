@@ -1,3 +1,10 @@
+//! Dfns Key Import SDK
+//!
+//! Provides a basic functionality to split the secret key to be imported into key shares
+//! at customer side, encrypt them and build a key import request that needs to be sent
+//! to Dfns API.
+
+#![forbid(missing_docs)]
 #![no_std]
 
 extern crate alloc;
@@ -36,7 +43,7 @@ pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
 
 #[wasm_bindgen]
 impl SecretKey {
-    /// Parses the secret key in big-endian format (the most popular)
+    /// Parses the secret key in big-endian format (the most widely-used format)
     ///
     /// Throws `Error` if secret key is invalid
     pub fn from_bytes_be(bytes: &[u8]) -> Result<SecretKey, JsError> {
@@ -50,6 +57,12 @@ impl SecretKey {
 ///
 /// Takes a secret key to be imported, and signers info (needs to be retrieved from Dfns API). Returns
 /// a body of the request that needs to be sent to Dfns API in order to import given key
+///
+/// Requires a global secure randomness generator to be available, that can be either [Web Crypto API]
+/// or [Node JS crypto module]. If neither of them is available, throws `Error`.
+///
+/// [Web Crypto API]: https://www.w3.org/TR/WebCryptoAPI/
+/// [Node JS crypto module]: https://nodejs.org/api/crypto.html
 ///
 /// Throws `Error` in case of failure
 #[wasm_bindgen]

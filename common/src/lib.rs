@@ -1,3 +1,9 @@
+//! Dfns Key Import SDK: core code
+//!
+//! This library contains a common code shared between Dfns infrastructure
+//! and client library.
+
+#![forbid(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
@@ -20,6 +26,7 @@ pub use generic_ec::curves::Secp256k1;
 /// Incrementing the version will force clients to update the library.
 const VERSION: u8 = 1;
 
+/// Format of decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "")]
 pub struct KeySharePlaintext<E: Curve> {
@@ -31,6 +38,7 @@ pub struct KeySharePlaintext<E: Curve> {
     pub public_shares: Vec<Point<E>>,
 }
 
+/// Splits secret key into key shares
 pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
@@ -87,6 +95,9 @@ impl core::fmt::Display for Error {
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
+/// List of signers
+///
+/// Lists all the signers: their identity and encryption keys. List is sorted by signers identities.
 #[derive(Debug, serde::Serialize)]
 pub struct SignersInfo {
     // This list must be sorted by `identity`
@@ -94,6 +105,9 @@ pub struct SignersInfo {
 }
 
 impl SignersInfo {
+    /// Returns list of signers
+    ///
+    /// List is sorted by signers identities
     pub fn signers(&self) -> &[SignerInfo] {
         &self.signers
     }
@@ -116,22 +130,32 @@ impl<'de> serde::Deserialize<'de> for SignersInfo {
     }
 }
 
+/// Signer info
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SignerInfo {
+    /// Signer public encryption key
     pub encryption_key: encryption::EncryptionKey,
+    /// Signer identity
     #[serde(with = "hex::serde")]
     pub identity: Vec<u8>,
 }
 
+/// Key import request that's intended to be sent to Dfns API
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct KeyImportRequest {
+    /// List of encrypted key shares per signer
     pub key_shares_list: Vec<KeyShareCiphertext>,
 }
 
+/// Encrypted key share
+///
+/// Contains key share ciphertext and destination signer identity.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct KeyShareCiphertext {
+    /// Key share ciphertext
     #[serde(with = "hex::serde")]
     pub encrypted_key_share: Vec<u8>,
+    /// Identity of signer that's supposed to receive that key share
     #[serde(with = "hex::serde")]
     pub recipient_identity: Vec<u8>,
 }
