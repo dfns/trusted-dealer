@@ -1,3 +1,6 @@
+//! Misc utils
+
+/// Ensures version matches the [version](super::VERSION) compatible with the lib
 #[derive(Debug, Clone, Copy)]
 pub struct VersionGuard;
 

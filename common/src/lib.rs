@@ -5,7 +5,7 @@ extern crate alloc;
 pub use {generic_ec, rand_core};
 
 pub mod encryption;
-mod utils;
+pub mod utils;
 
 use alloc::vec::Vec;
 
