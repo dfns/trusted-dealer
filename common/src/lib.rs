@@ -1,61 +1,70 @@
-#[cfg(test)]
-mod test;
+//! Dfns Key Import SDK: core code
+//!
+//! This library contains a common code shared between Dfns infrastructure
+//! and client library.
+
+#![forbid(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+pub use {generic_ec, rand_core};
 
 pub mod encryption;
+pub mod utils;
 
-use std::collections::HashMap;
+use alloc::vec::Vec;
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
 pub use generic_ec::curves::Secp256k1;
 
+/// Version number, ensures that server and client are compatible
+///
+/// Version is embedded into all serialized structs (public key, signers info, etc.).
+/// Incrementing the version will force clients to update the library.
+const VERSION: u8 = 1;
+
+/// Format of decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "")]
-pub struct Share<E: Curve> {
-    // 2 bytes integer representation
-    pub i: u16,
-    // fixed width representation; usually an integer; size depends on E
-    pub shared_public_key: Point<E>,
-    // fixed width integer representation; size depends on E
+pub struct KeySharePlaintext<E: Curve> {
+    /// Version of library that generated the key share
+    pub version: utils::VersionGuard,
+    /// The secret share
     pub secret_share: SecretScalar<E>,
-    // dynamic array of fixed width representations; fixed size depends on E
+    /// `public_shares[j]` is commitment to secret share of j-th party
     pub public_shares: Vec<Point<E>>,
 }
 
-impl<E: Curve> Share<E> {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buffer = Vec::new();
-        let _result = ciborium::into_writer(self, &mut buffer);
-        buffer
-    }
-}
-
-pub fn shard<E: Curve, R: RngCore + CryptoRng>(
-    shared_secret_key: &SecretScalar<E>,
-    n: u16,
-    t: u16,
+/// Splits secret key into key shares
+pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
-) -> Vec<Share<E>> {
-    // TODO: remove unwrap or return error
-    #[allow(clippy::unwrap_used)]
+    t: u16,
+    n: u16,
+    secret_key: &SecretScalar<E>,
+) -> Result<Vec<KeySharePlaintext<E>>, Error> {
+    if !(n > 1 && 2 <= t && t <= n) {
+        return Err(Error(()));
+    }
     let key_shares_indexes = (1..=n)
         .map(|i| generic_ec::NonZero::from_scalar(Scalar::from(i)))
         .collect::<Option<Vec<_>>>()
-        .unwrap();
-    let (shared_public_key, secret_shares) = {
+        .ok_or(Error(()))?;
+
+    let secret_shares = {
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
             rng,
             usize::from(t) - 1,
-            shared_secret_key.clone(),
+            secret_key.clone(),
         );
-        let pk = Point::generator() * f.value::<_, Scalar<_>>(&Scalar::zero());
         let shares = key_shares_indexes
             .iter()
             .map(|i| f.value(i))
             .map(|mut x| SecretScalar::new(&mut x))
             .collect::<Vec<_>>();
-        (pk, shares)
+        shares
     };
 
     let public_shares = secret_shares
@@ -63,38 +72,90 @@ pub fn shard<E: Curve, R: RngCore + CryptoRng>(
         .map(|x| Point::generator() * x)
         .collect::<Vec<Point<E>>>();
 
-    secret_shares
+    Ok(secret_shares
         .into_iter()
-        .zip(0u16..)
-        .map(|(secret_share, i)| Share {
-            i,
+        .map(|secret_share| KeySharePlaintext {
+            version: utils::VersionGuard,
             secret_share,
-            shared_public_key,
             public_shares: public_shares.clone(),
         })
-        .collect()
+        .collect())
 }
 
-type Identity = Vec<u8>;
+/// Splitting key share failed
+#[derive(Debug)]
+pub struct Error(());
 
-#[derive(Clone)]
-pub struct Signer {
-    pub public_key: Vec<u8>,
-    pub identity: Identity,
-}
-
-pub trait ApiUser {
-    fn get_signers(&mut self) -> std::io::Result<Vec<Signer>>;
-    fn send_shards(&mut self, shares: &HashMap<Identity, Vec<u8>>) -> std::io::Result<()>;
-}
-
-pub fn send_all<Api: ApiUser>(api: &mut Api, shards: &[Share<Secp256k1>]) -> std::io::Result<()> {
-    let mut signers = api.get_signers()?;
-    signers.sort_unstable_by(|s1, s2| s1.identity.cmp(&s2.identity));
-    let mut dests = HashMap::new();
-    for (signer, shard) in signers.into_iter().zip(shards) {
-        let shard = shard.to_bytes();
-        dests.insert(signer.identity, shard);
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("splitting secret key into key shares failed")
     }
-    api.send_shards(&dests)
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
+/// List of signers
+///
+/// Lists all the signers: their identity and encryption keys. List is sorted by signers identities.
+#[derive(Debug, serde::Serialize)]
+pub struct SignersInfo {
+    // This list must be sorted by `identity`
+    signers: Vec<SignerInfo>,
+}
+
+impl SignersInfo {
+    /// Returns list of signers
+    ///
+    /// List is sorted by signers identities
+    pub fn signers(&self) -> &[SignerInfo] {
+        &self.signers
+    }
+}
+
+impl From<Vec<SignerInfo>> for SignersInfo {
+    fn from(mut signers: Vec<SignerInfo>) -> Self {
+        signers.sort_unstable_by(|s1, s2| s1.identity.cmp(&s2.identity));
+        Self { signers }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SignersInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let signers = Vec::<SignerInfo>::deserialize(deserializer)?;
+        Ok(Self::from(signers))
+    }
+}
+
+/// Signer info
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct SignerInfo {
+    /// Signer public encryption key
+    pub encryption_key: encryption::EncryptionKey,
+    /// Signer identity
+    #[serde(with = "hex::serde")]
+    pub identity: Vec<u8>,
+}
+
+/// Key import request that's intended to be sent to Dfns API
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct KeyImportRequest {
+    /// List of encrypted key shares per signer
+    pub key_shares_list: Vec<KeyShareCiphertext>,
+}
+
+/// Encrypted key share
+///
+/// Contains key share ciphertext and destination signer identity.
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct KeyShareCiphertext {
+    /// Key share ciphertext
+    #[serde(with = "hex::serde")]
+    pub encrypted_key_share: Vec<u8>,
+    /// Identity of signer that's supposed to receive that key share
+    #[serde(with = "hex::serde")]
+    pub recipient_identity: Vec<u8>,
 }

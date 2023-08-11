@@ -179,7 +179,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "cggmp21"
 version = "0.0.0"
-source = "git+https://github.com/dfns-labs/cggmp21#16138a3b031404512ced92b85644a17450070a4d"
+source = "git+https://github.com/dfns-labs/cggmp21#4117bea4b14249f16364bb68718b3e63ef58bc3d"
 dependencies = [
  "digest 0.10.7",
  "futures",
@@ -208,33 +208,6 @@ dependencies = [
  "num-traits",
  "serde",
  "winapi",
-]
-
-[[package]]
-name = "ciborium"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "effd91f6c78e5a4ace8a5d3c0b6bfaec9e2baaef55f3efc00e45fb2e477ee926"
-dependencies = [
- "ciborium-io",
- "ciborium-ll",
- "serde",
-]
-
-[[package]]
-name = "ciborium-io"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdf919175532b369853f5d5e20b26b43112613fd6fe7aee757e35f7a44642656"
-
-[[package]]
-name = "ciborium-ll"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "defaa24ecc093c77630e6c15e17c51f5e187bf35ee514f4e2d67baaa96dae22b"
-dependencies = [
- "ciborium-io",
- "half",
 ]
 
 [[package]]
@@ -350,6 +323,7 @@ name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
  "dfns-key-import-common",
+ "serde_json",
  "wasm-bindgen",
 ]
 
@@ -359,13 +333,14 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "cggmp21",
- "ciborium",
  "generic-ec",
  "generic-ec-zkp",
+ "hex",
  "hkdf",
  "rand_core",
  "rand_dev",
  "serde",
+ "serde_json",
  "sha2",
 ]
 
@@ -669,12 +644,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "half"
-version = "1.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -885,7 +854,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "paillier-zk"
 version = "0.1.0"
-source = "git+https://github.com/dfns-labs/paillier-zk?branch=m#a2639222e07b38657344c8327cd47ebb01be6eb7"
+source = "git+https://github.com/dfns-labs/paillier-zk?branch=m#14295d15299e86d8349af43332afce648c5825a2"
 dependencies = [
  "generic-ec",
  "libpaillier",
