@@ -10,7 +10,10 @@
 
 extern crate alloc;
 
-use alloc::{string::String, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 use dfns_key_import_common::encryption::DecryptionKey;
 use generic_ec::curves::Secp256k1;
@@ -150,7 +153,7 @@ where
 }
 
 fn new_error(ctx: &str) -> ErrorType {
-    ErrorType::new(&alloc::format!("{ctx}"))
+    ErrorType::new(ctx)
 }
 
 /// Error type to be returned on non-wasm32 arch.
@@ -162,7 +165,7 @@ pub struct KeyExportError {
 impl KeyExportError {
     fn new(s: &str) -> Self {
         KeyExportError {
-            desc: alloc::string::ToString::to_string(&s),
+            desc: s.to_string(),
         }
     }
 }

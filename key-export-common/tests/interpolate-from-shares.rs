@@ -1,8 +1,6 @@
 use dfns_key_export_common::{interpolate_secret_key, InterpolateKeyError, KeySharePlaintext};
 use dfns_key_import_common::split_secret_key;
 
-use generic_ec;
-
 #[test]
 fn interpolate_key() {
     type E = generic_ec::curves::Secp256k1;
@@ -18,11 +16,9 @@ fn interpolate_key() {
     // println!("{:?}", serde_json::to_string(&shares[0]));
 
     let mut shares = (1..n + 1)
-        .into_iter()
         .zip(shares)
         .map(|(i, s)| KeySharePlaintext::<E> {
-            index: generic_ec::NonZero::from_scalar(generic_ec::Scalar::from(u16::from(i)))
-                .unwrap(),
+            index: generic_ec::NonZero::from_scalar(generic_ec::Scalar::from(i)).unwrap(),
             secret_share: s.secret_share.clone(),
         })
         .map(|share_plaintext| serde_json::to_vec(&share_plaintext).unwrap())

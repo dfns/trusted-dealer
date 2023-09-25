@@ -5,7 +5,7 @@ use dfns_key_export_client::KeyExportContext;
 fn print_request() {
     let ctx = KeyExportContext::new().map_err(|_| {}).unwrap();
     let req = ctx
-        .build_key_export_request(format!("wa-xxx-xxx"))
+        .build_key_export_request("wa-xxx-xxx".to_string())
         .map_err(|_| {})
         .unwrap();
     println!("{:?}", req);

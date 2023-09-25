@@ -121,7 +121,7 @@ pub fn interpolate_secret_key<E: Curve>(
 ) -> Result<SecretScalar<E>, InterpolateKeyError> {
     // Validate input
     let n = key_shares_bytes.len();
-    if !(n > 1) {
+    if n <= 1 {
         return Err(InterpolateKeyError::NotEnoughShares);
     };
 
@@ -132,7 +132,7 @@ pub fn interpolate_secret_key<E: Curve>(
     // Parse key_shares
     let key_shares: Vec<KeySharePlaintext<E>> = key_shares_bytes
         .iter()
-        .map(|share| serde_json::from_slice(&share))
+        .map(|share| serde_json::from_slice(share))
         .collect::<Result<Vec<KeySharePlaintext<E>>, _>>()
         .map_err(|_| InterpolateKeyError::CannotParseShares)?;
 
@@ -147,9 +147,8 @@ pub fn interpolate_secret_key<E: Curve>(
         .collect::<Vec<SecretScalar<_>>>();
 
     let mut interpolated_secret_key = {
-        let lagrange_coefs = (0..n).map(|j| {
-            generic_ec_zkp::polynomial::lagrange_coefficient(Scalar::zero(), j.into(), &indexes)
-        });
+        let lagrange_coefs = (0..n)
+            .map(|j| generic_ec_zkp::polynomial::lagrange_coefficient(Scalar::zero(), j, &indexes));
         lagrange_coefs
             .zip(shares)
             .map(|(lambda_j, share)| Some(lambda_j? * &share))
