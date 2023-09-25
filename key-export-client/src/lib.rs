@@ -28,16 +28,15 @@ const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     curve: KeyCurve::Secp256k1,
 }];
 
-// We are using KeyExportContext and the returned ErrorType in `tests/integration.rs` of the
-// `dfns-signer-tests` package. As JsError::new() is not suported in non-wasm32 architectures,
-// this code is compiled to return a KeyExportError in non-wasm32 architectures
-// and a JsError in wasm32 architecture.
-
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+
+// We are using KeyExportContext and the returned ErrorType in `tests/integration.rs` of the
+// `dfns-signer-tests` package. As JsError::new() is not suported in non-wasm32 architectures,
+// this code is compiled to return a key_export_error::KeyExportError in non-wasm32 architectures
+// and a JsError in wasm32 architecture.
 #[cfg(target_arch = "wasm32")]
 type ErrorType = JsError;
-
 #[cfg(not(target_arch = "wasm32"))]
 type ErrorType = KeyExportError;
 
@@ -163,6 +162,7 @@ pub struct KeyExportError {
 }
 
 impl KeyExportError {
+    #[allow(dead_code)]
     fn new(s: &str) -> Self {
         KeyExportError {
             desc: s.to_string(),
