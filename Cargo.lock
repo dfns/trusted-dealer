@@ -358,7 +358,7 @@ name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
  "dfns-key-export-common",
- "dfns-key-import-common 0.1.0",
+ "dfns-key-import-common",
  "generic-ec",
  "generic-ec-zkp",
  "hex",
@@ -371,7 +371,7 @@ dependencies = [
 name = "dfns-key-export-common"
 version = "0.1.0"
 dependencies = [
- "dfns-key-import-common 0.1.0 (git+https://github.com/dfns-labs/trusted-dealer?branch=m)",
+ "dfns-key-import-common",
  "generic-ec",
  "generic-ec-zkp",
  "hex",
@@ -386,7 +386,7 @@ dependencies = [
 name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
- "dfns-key-import-common 0.1.0",
+ "dfns-key-import-common",
  "serde_json",
  "wasm-bindgen",
 ]
@@ -405,21 +405,6 @@ dependencies = [
  "rand_dev",
  "serde",
  "serde_json",
- "sha2",
-]
-
-[[package]]
-name = "dfns-key-import-common"
-version = "0.1.0"
-source = "git+https://github.com/dfns-labs/trusted-dealer?branch=m#3bf926bc1cb165c3870c0ebd9465cddf3dd94fcd"
-dependencies = [
- "aes-gcm",
- "generic-ec",
- "generic-ec-zkp",
- "hex",
- "hkdf",
- "rand_core",
- "serde",
  "sha2",
 ]
 
