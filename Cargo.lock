@@ -358,7 +358,7 @@ name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
  "dfns-key-export-common",
- "dfns-key-import-common 0.1.0 (git+https://github.com/dfns-labs/trusted-dealer?branch=m)",
+ "dfns-key-import-common 0.1.0",
  "generic-ec",
  "generic-ec-zkp",
  "hex",

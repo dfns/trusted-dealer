@@ -1,7 +1,7 @@
 //! Dfns Key Export SDK
 //! Provides a basic functionality for key export.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 #![forbid(missing_docs)]
 
 extern crate alloc;

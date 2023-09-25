@@ -19,6 +19,3 @@ dfns-key-import-common = { git = "https://github.com/dfns-labs/trusted-dealer", 
 
 [dev-dependencies]
 rand_dev = "0.1"
-
-[features]
-std = []
