@@ -1,5 +1,6 @@
 use dfns_key_export_common::{interpolate_secret_key, InterpolateKeyError, KeySharePlaintext};
 use dfns_key_import_common::split_secret_key;
+use generic_ec::{NonZero, Scalar, SecretScalar};
 
 #[test]
 fn interpolate_key() {
@@ -69,4 +70,18 @@ fn interpolate_key() {
     // Interpolate the secret key with 3 shares. Should still work.
     let secret_key_interp = interpolate_secret_key::<E>(&shares[..4], &public_key).unwrap();
     assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+}
+
+#[test]
+fn parse_key_share_plaintext() {
+    type E = generic_ec::curves::Secp256k1;
+
+    let mut rng = rand_dev::DevRng::new();
+    let key_share_plaintext = KeySharePlaintext {
+        secret_share: SecretScalar::<E>::random(&mut rng),
+        index: NonZero::<Scalar<E>>::random(&mut rng),
+    };
+    let key_share_plaintext = serde_json::to_string(&key_share_plaintext).unwrap();
+    // println!("{:?}", &key_share_plaintext1);
+    let _: KeySharePlaintext<E> = serde_json::from_str(&key_share_plaintext).unwrap();
 }
