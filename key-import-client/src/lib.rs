@@ -105,7 +105,7 @@ pub fn build_key_import_request(
                 recipient_identity: recipient.identity.clone(),
             })
         })
-        .collect::<Result<Vec<_>, dfns_encryption::encryption::Error>>()
+        .collect::<Result<Vec<_>, dfns_encryption::Error>>()
         .map_err(|_| JsError::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it

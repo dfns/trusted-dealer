@@ -44,7 +44,7 @@ type ErrorType = KeyExportError;
 /// and parse the response of the Dfns API to extract the key of a wallet.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct KeyExportContext {
-    decryption_key: dfns_encryption::encryption::DecryptionKey,
+    decryption_key: dfns_encryption::DecryptionKey,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -66,7 +66,7 @@ impl KeyExportContext {
             .context("cryptographic randomness generator is not available")?;
 
         Ok(KeyExportContext {
-            decryption_key: dfns_encryption::encryption::DecryptionKey::generate(&mut rng),
+            decryption_key: dfns_encryption::DecryptionKey::generate(&mut rng),
         })
     }
 
