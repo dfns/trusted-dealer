@@ -33,7 +33,7 @@ use wasm_bindgen::prelude::*;
 
 // We are using KeyExportContext and the returned ErrorType in `tests/integration.rs` of the
 // `dfns-signer-tests` package. As JsError::new() is not suported in non-wasm32 architectures,
-// this code is compiled to return a key_export_error::KeyExportError in non-wasm32 architectures
+// this code is compiled to return a KeyExportError in non-wasm32 architectures
 // and a JsError in wasm32 architecture.
 #[cfg(target_arch = "wasm32")]
 type ErrorType = JsError;
@@ -130,8 +130,7 @@ impl KeyExportContext {
             }
             (_, _) => {
                 return Err(new_error("the combination of protocol and curve for this key is not supported for key export"));
-            } // ed25519_dalek::PublicKey::from_bytes(public_key).context("invalid public key")?;
-              // Point::from_bytes(&response.public_key).context("invalid public key")?
+            }
         };
 
         Ok(secret_key.as_ref().to_be_bytes().to_vec())

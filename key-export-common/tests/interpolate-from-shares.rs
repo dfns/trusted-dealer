@@ -13,7 +13,6 @@ fn interpolate_key() {
     let public_key = public_key.to_bytes(true).to_vec();
 
     let shares = split_secret_key(&mut rng, t, n, &secret_key).unwrap();
-    // println!("{:?}", serde_json::to_string(&shares[0]));
 
     let mut shares = (1..n + 1)
         .zip(shares)
@@ -36,7 +35,7 @@ fn interpolate_key() {
     let res = interpolate_secret_key::<E>(&shares[..2], &public_key);
     assert!(res.is_err());
     assert!(matches!(
-        res.expect_err(""),
+        res.unwrap_err(),
         InterpolateKeyError::CannotVerifySecretKey
     ));
 

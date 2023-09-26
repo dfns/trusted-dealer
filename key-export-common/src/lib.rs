@@ -9,7 +9,7 @@ extern crate alloc;
 use alloc::{string::String, vec::Vec};
 use serde_with::{base64::Base64, serde_as};
 
-use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
+use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 
 /// Format of a decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -21,15 +21,6 @@ pub struct KeySharePlaintext<E: Curve> {
     pub secret_share: SecretScalar<E>,
 }
 
-/// Format of a decrypted key share
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct KeySharePlaintextNoGen {
-    /// The index (evaluation point)
-    // pub index: NonZero<Scalar<Secp256k1>>,
-    // /// The secret share
-    pub secret_share: SecretScalar<Secp256k1>,
-}
-
 /// Identity and encrypted share of a signer.
 #[serde_as]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -38,14 +29,15 @@ pub struct EncryptedShareAndIdentity {
     #[serde_as(as = "Base64")]
     pub signer_identity: Vec<u8>,
     /// Signers's key share.
+    ///
     /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
     /// Ciphertext and plaintext are in format defined by `dfns-key-import-common`
-    /// library. See https://github.com/dfns-labs/trusted-dealer/
+    /// library. See [here](https://github.com/dfns-labs/trusted-dealer/).
     #[serde_as(as = "Base64")]
     pub encrypted_key_share: Vec<u8>,
 }
 
-/// Key export request that's intended to be sent fromt the client
+/// Key export request that's intended to be sent from the client
 /// to Dfns API.
 #[serde_as]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -110,9 +102,9 @@ pub enum KeyCurve {
 }
 
 /// Internal function to perform interpolation.
-/// In the end tt verifies the computed key against the provided
-/// public key and returns an error if it doesn't match.
 ///
+/// In the end it verifies the computed key against the provided
+/// public key and returns an error if it doesn't match.
 /// `key_shares` is a vector of serialized KeySharePlaintext<E>
 /// 'public_key` is a serialized Point<E>
 pub fn interpolate_secret_key<E: Curve>(
