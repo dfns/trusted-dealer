@@ -8,7 +8,7 @@
 
 extern crate alloc;
 
-pub use {generic_ec, rand_core};
+pub use {dfns_encryption::encryption, generic_ec, generic_ec::curves::Secp256k1};
 
 pub mod utils;
 
@@ -16,8 +16,6 @@ use alloc::vec::Vec;
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
-
-pub use generic_ec::curves::Secp256k1;
 
 /// Version number, ensures that server and client are compatible
 ///
