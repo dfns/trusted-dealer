@@ -374,7 +374,6 @@ version = "0.1.0"
 dependencies = [
  "dfns-encryption",
  "dfns-key-export-common",
- "dfns-key-import-common",
  "generic-ec",
  "generic-ec-zkp",
  "hex",
