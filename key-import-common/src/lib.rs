@@ -8,7 +8,7 @@
 
 extern crate alloc;
 
-pub use {dfns_encryption::encryption, generic_ec, generic_ec::curves::Secp256k1};
+pub use {dfns_encryption::encryption, generic_ec, generic_ec::curves::Secp256k1, rand_core};
 
 pub mod utils;
 
