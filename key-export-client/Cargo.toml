@@ -8,18 +8,14 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2.84"
-serde_json = "1"
-rand_core = { version = "0.6", default-features = false }
-
+dfns-encryption = { path = "../encryption" }
+dfns-key-export-common = { path = "../key-export-common" }
 generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
 generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "alloc"] }
 
-dfns-key-export-common = { path = "../key-export-common" }
-
-# We are using the encryption scheme in key-import-common:
-dfns-key-import-common = { path = "../key-import-common" }
-
+wasm-bindgen = "0.2.84"
+serde_json = "1"
+rand_core = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}

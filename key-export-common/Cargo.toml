@@ -14,8 +14,6 @@ rand_core = { version = "0.6", default-features = false }
 generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
 generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "alloc"] }
 
-# We are using the encryption scheme defined in key-import repo:
-dfns-key-import-common = { path = "../key-import-common" }
-
 [dev-dependencies]
+dfns-key-import-common = { path = "../key-import-common" }
 rand_dev = "0.1"

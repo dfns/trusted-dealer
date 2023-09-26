@@ -1,5 +1,6 @@
 //! Dfns Key Export SDK
-//! Provides a basic functionality for key export.
+//!
+//! Provides basic functionality for key export.
 
 #![no_std]
 #![forbid(missing_docs)]
@@ -31,7 +32,7 @@ pub struct EncryptedShareAndIdentity {
     /// Signers's key share.
     ///
     /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
-    /// Ciphertext and plaintext are in format defined by `dfns-key-import-common`
+    /// Ciphertext and plaintext are in format defined by `dfns-encryption`
     /// library. See [here](https://github.com/dfns-labs/trusted-dealer/).
     #[serde_as(as = "Base64")]
     pub encrypted_key_share: Vec<u8>,
@@ -48,7 +49,7 @@ pub struct KeyExportRequest {
     ///
     /// It contains the bytes of a `dfns_key_import_common::encryption::EncryptionKey`,
     /// as defined in `dfns-key-import-common` library:
-    /// https://github.com/dfns-labs/trusted-dealer/
+    /// `<https://github.com/dfns-labs/trusted-dealer/>`
     #[serde_as(as = "Base64")]
     pub encryption_key: Vec<u8>,
     /// Key types (protocol and curve) supported by the WASM module
@@ -105,24 +106,25 @@ pub enum KeyCurve {
 ///
 /// In the end it verifies the computed key against the provided
 /// public key and returns an error if it doesn't match.
-/// `key_shares` is a vector of serialized KeySharePlaintext<E>
-/// 'public_key` is a serialized Point<E>
-pub fn interpolate_secret_key<E: Curve>(
-    key_shares_bytes: &[Vec<u8>],
-    public_key_bytes: &[u8],
+///
+/// `key_shares` is a vector of serialized `KeySharePlaintext<E>`,
+/// `public_key` is a serialized ``Point<E>``.
+pub fn parse_and_interpolate_secret_key<E: Curve>(
+    key_shares: &[Vec<u8>],
+    public_key: &[u8],
 ) -> Result<SecretScalar<E>, InterpolateKeyError> {
     // Validate input
-    let n = key_shares_bytes.len();
+    let n = key_shares.len();
     if n <= 1 {
         return Err(InterpolateKeyError::NotEnoughShares);
     };
 
     // Parse public key
-    let public_key = Point::<E>::from_bytes(public_key_bytes)
+    let public_key = Point::<E>::from_bytes(public_key)
         .map_err(|_| InterpolateKeyError::CannotParsePublicKey)?;
 
     // Parse key_shares
-    let key_shares: Vec<KeySharePlaintext<E>> = key_shares_bytes
+    let key_shares: Vec<KeySharePlaintext<E>> = key_shares
         .iter()
         .map(|share| serde_json::from_slice(share))
         .collect::<Result<Vec<KeySharePlaintext<E>>, _>>()

@@ -10,7 +10,6 @@ extern crate alloc;
 
 pub use {generic_ec, rand_core};
 
-pub mod encryption;
 pub mod utils;
 
 use alloc::vec::Vec;
@@ -24,7 +23,7 @@ pub use generic_ec::curves::Secp256k1;
 ///
 /// Version is embedded into all serialized structs (public key, signers info, etc.).
 /// Incrementing the version will force clients to update the library.
-const VERSION: u8 = 1;
+pub const VERSION: u8 = 1;
 
 /// Format of decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -134,7 +133,7 @@ impl<'de> serde::Deserialize<'de> for SignersInfo {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SignerInfo {
     /// Signer public encryption key
-    pub encryption_key: encryption::EncryptionKey,
+    pub encryption_key: dfns_encryption::encryption::EncryptionKey,
     /// Signer identity
     #[serde(with = "hex::serde")]
     pub identity: Vec<u8>,
