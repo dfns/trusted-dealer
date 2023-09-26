@@ -46,8 +46,8 @@ pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SecretKey {
     /// Serializes the secret key in big-endian format.
-    pub fn to_bytes_be(secret_key: SecretKey) -> Vec<u8> {
-        secret_key.0.as_ref().to_be_bytes().to_vec()
+    pub fn to_bytes_be(&self) -> Vec<u8> {
+        self.0.as_ref().to_be_bytes().to_vec()
     }
 }
 
