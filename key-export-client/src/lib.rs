@@ -2,7 +2,7 @@
 //!
 //! Customers can use the KeyExportContext struct and its methods
 //! to build a key-export request, which then can be sent to
-//! the Dfns API, and to parse the response and extract the secret
+//! the Dfns API, and to parse the response and extract the private
 //! key of a specified wallet.
 
 #![forbid(missing_docs)]
@@ -39,6 +39,18 @@ type ErrorType = JsError;
 #[cfg(not(target_arch = "wasm32"))]
 type ErrorType = KeyExportError;
 
+/// Secret key to be exported
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl SecretKey {
+    /// Serializes the secret key in big-endian format.
+    pub fn to_bytes_be(secret_key: SecretKey) -> Vec<u8> {
+        secret_key.0.as_ref().to_be_bytes().to_vec()
+    }
+}
+
 /// This class can be used to generate an encryption/decryption key pair,
 /// create a key-export request (which needs to be forwarded to the Dfns API),
 /// and parse the response of the Dfns API to extract the key of a wallet.
@@ -71,7 +83,9 @@ impl KeyExportContext {
     }
 
     /// Returns a request body that needs to be sent to Dfns API in order to
-    /// export the key of the wallet with the given `wallet_id`,
+    /// export the key of the wallet with the given `wallet_id`.
+    ///
+    /// Throws `Error` in case of failure.
     pub fn build_key_export_request(&self, wallet_id: String) -> Result<String, ErrorType> {
         let req = KeyExportRequest {
             wallet_id,
@@ -81,9 +95,12 @@ impl KeyExportContext {
         serde_json::to_string(&req).context("cannot serialize key-export request")
     }
 
-    /// Parse the response from Dfns API and recover the secret key.
-    /// The functions returns the secret key in big-endian format.
-    pub fn recover_secret_key(&self, response: String) -> Result<Vec<u8>, ErrorType> {
+    /// Parses the response from Dfns API and recovers the private key.
+    ///
+    /// It returns the private key as a big endian byte array,
+    /// or an `Error` (if the private key cannot be recovered,
+    /// or is recovered but doesn’t match the public_key).
+    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, ErrorType> {
         // Parse response
         let response: KeyExportResponse =
             serde_json::from_str(&response).context("cannot parse key-export response")?;
@@ -118,7 +135,7 @@ impl KeyExportContext {
         // decrypted_key_shares is a vector of decrypted but serialized KeySharePlaintext<E>
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
-        // and perform the interpolation.
+        // perform the interpolation, and return the private key.
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
                 let key_shares = parse_key_shares::<Secp256k1>(&decrypted_key_shares)
@@ -132,8 +149,7 @@ impl KeyExportContext {
                 return Err(new_error("the combination of protocol and curve for this key is not supported for key export"));
             }
         };
-
-        Ok(secret_key.as_ref().to_be_bytes().to_vec())
+        Ok(SecretKey(secret_key))
     }
 }
 
