@@ -19,3 +19,5 @@ rand_core = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}
+dfns-key-import-common = { path = "../key-import-common" }
+rand_dev = "0.1"

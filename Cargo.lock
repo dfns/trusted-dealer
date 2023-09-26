@@ -374,10 +374,12 @@ version = "0.1.0"
 dependencies = [
  "dfns-encryption",
  "dfns-key-export-common",
+ "dfns-key-import-common",
  "generic-ec",
  "generic-ec-zkp",
  "hex",
  "rand_core",
+ "rand_dev",
  "serde_json",
  "wasm-bindgen",
 ]
@@ -386,7 +388,6 @@ dependencies = [
 name = "dfns-key-export-common"
 version = "0.1.0"
 dependencies = [
- "dfns-key-import-common",
  "generic-ec",
  "generic-ec-zkp",
  "hex",

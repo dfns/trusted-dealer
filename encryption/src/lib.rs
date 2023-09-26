@@ -1,7 +1,7 @@
-//! Dfns Key Import SDK: core code
+//! Encryption for key import and export
 //!
-//! This library contains a common code shared between Dfns infrastructure
-//! and client library.
+//! This library implements a public-key encryption scheme
+//! used in the key-export and key-import functionallities.
 
 #![forbid(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]

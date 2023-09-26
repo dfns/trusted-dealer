@@ -15,10 +15,10 @@ use alloc::{
     vec::Vec,
 };
 
-use generic_ec::curves::Secp256k1;
+use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
 
 use dfns_key_export_common::{
-    KeyCurve, KeyExportRequest, KeyExportResponse, KeyProtocol, SupportedScheme,
+    KeyCurve, KeyExportRequest, KeyExportResponse, KeyProtocol, KeySharePlaintext, SupportedScheme,
 };
 use rand_core::{self, RngCore};
 
@@ -117,15 +117,16 @@ impl KeyExportContext {
             .collect::<Result<Vec<_>, ErrorType>>()?;
         // decrypted_key_shares is a vector of decrypted but serialized KeySharePlaintext<E>
 
-        // Depending on the protocol/curve combination, call the appropriate version of
-        // interpolate_secret_key() and extract the secret key.
+        // Depending on the protocol/curve combination, parse key_shares and public_key,
+        // and perform the interpolation.
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
-                dfns_key_export_common::parse_and_interpolate_secret_key::<Secp256k1>(
-                    &decrypted_key_shares,
-                    &response.public_key,
-                )
-                .context("interpolation failed")?
+                let key_shares = parse_key_shares::<Secp256k1>(&decrypted_key_shares)
+                    .context("cannot parse the public key")?;
+                let public_key = Point::<Secp256k1>::from_bytes(&response.public_key)
+                    .context("cannot parse a decrepted secret-key share")?;
+                interpolate_secret_key::<Secp256k1>(&key_shares, &public_key)
+                    .context("interpolation failed")?
             }
             (_, _) => {
                 return Err(new_error("the combination of protocol and curve for this key is not supported for key export"));
@@ -133,6 +134,83 @@ impl KeyExportContext {
         };
 
         Ok(secret_key.as_ref().to_be_bytes().to_vec())
+    }
+}
+
+/// Parse a collection of decrepted shares as a vector of``KeySharePlaintext<E>``.
+fn parse_key_shares<E: Curve>(
+    key_shares: &[Vec<u8>],
+) -> Result<Vec<KeySharePlaintext<E>>, serde_json::Error> {
+    key_shares
+        .iter()
+        .map(|share| serde_json::from_slice(share))
+        .collect::<Result<Vec<KeySharePlaintext<E>>, _>>()
+}
+
+/// Perform interpolation.
+///
+/// In the end it verifies the computed key against the provided
+/// public key and returns an error if it doesn't match.
+pub fn interpolate_secret_key<E: Curve>(
+    key_shares: &[KeySharePlaintext<E>],
+    public_key: &Point<E>,
+) -> Result<SecretScalar<E>, InterpolateKeyError> {
+    // Validate input
+    let n = key_shares.len();
+    if n <= 1 {
+        return Err(InterpolateKeyError::NotEnoughShares);
+    };
+
+    // Extract evaluation indexes and secret-share values
+    let indexes = key_shares
+        .iter()
+        .map(|s| s.index)
+        .collect::<Vec<NonZero<_>>>();
+    let secret_shares = key_shares.iter().map(|s| (s.secret_share.clone()));
+
+    // Interpolate
+    let mut interpolated_secret_key = {
+        let lagrange_coefs = (0..n)
+            .map(|j| generic_ec_zkp::polynomial::lagrange_coefficient(Scalar::zero(), j, &indexes));
+        lagrange_coefs
+            .zip(secret_shares)
+            .map(|(lambda_j, share)| Some(lambda_j? * &share))
+            .try_fold(Scalar::zero(), |acc, p_i| Some(acc + p_i?))
+            .ok_or(InterpolateKeyError::MalformedIndexes)?
+    };
+
+    // Compute the public key that corresponds to the interpolated secret key
+    // and check whether it matches the given one.
+    if Point::generator() * interpolated_secret_key != *public_key {
+        return Err(InterpolateKeyError::CannotVerifySecretKey);
+    }
+
+    Ok(SecretScalar::new(&mut interpolated_secret_key))
+}
+
+/// Structure to describe errors in interpolate_secret_key()
+#[derive(Debug)]
+pub enum InterpolateKeyError {
+    /// Input to interpolate_secret_key() contains not enough shares
+    NotEnoughShares,
+    /// Internal error. Largange coefficient for zero index
+    ZeroIndex,
+    /// Internal error. Malformed indexes at secret reconstruction
+    MalformedIndexes,
+    /// The interpolated secret key cannot be verified against the provided public key
+    CannotVerifySecretKey,
+}
+
+/// Structure to describe errors in interpolate_secret_key
+impl core::fmt::Display for InterpolateKeyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let msg = match self {
+            InterpolateKeyError::NotEnoughShares => "not enough shares given as input",
+            InterpolateKeyError::ZeroIndex => "index is zero when it's suppposed to be non-zero",
+            InterpolateKeyError::MalformedIndexes => "malformed share indexes",
+            InterpolateKeyError::CannotVerifySecretKey => "the interpolated secret key cannot be verified against the provided public key (the secret key shares or the public key are invalid",
+        };
+        f.write_str(msg)
     }
 }
 
