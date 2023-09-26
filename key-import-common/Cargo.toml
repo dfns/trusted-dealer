@@ -25,4 +25,4 @@ rand_dev = "0.1"
 serde_json = "1"
 
 [features]
-std = []
+std = ["dfns-encryption/std"]
