@@ -22,7 +22,7 @@ use rand_core::{CryptoRng, RngCore};
 ///
 /// Version is embedded into all serialized structs (public key, signers info, etc.).
 /// Incrementing the version will force clients to update the library.
-pub const VERSION: u8 = 1;
+const VERSION: u8 = 1;
 
 /// Format of decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]

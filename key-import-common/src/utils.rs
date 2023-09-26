@@ -1,6 +1,6 @@
 //! Misc utils
 
-/// Ensures version matches the [version](super::VERSION) compatible with the lib
+/// Ensures the serialized version matches the version of the lib
 #[derive(Debug, Clone, Copy)]
 pub struct VersionGuard;
 
