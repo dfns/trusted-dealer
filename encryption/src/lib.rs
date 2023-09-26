@@ -1,4 +1,4 @@
-//! Encryption for key import and export
+//! Encryption scheme for key import and export.
 //!
 //! This library implements a public-key encryption scheme
 //! used in the key-export and key-import functionallities.
@@ -7,9 +7,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-
-pub use generic_ec::curves::Secp256k1;
-pub use {generic_ec, rand_core};
 
 pub mod encryption;
 

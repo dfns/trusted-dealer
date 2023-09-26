@@ -1,6 +1,6 @@
 //! Dfns Key Export SDK
 //!
-//! Provides basic functionality for key export.
+//! Provides basic types for key export.
 
 #![no_std]
 #![forbid(missing_docs)]
@@ -48,8 +48,8 @@ pub struct KeyExportRequest {
     /// An encryption key, to be used by signers to sign their key share.
     ///
     /// It contains the bytes of a `dfns_key_import_common::encryption::EncryptionKey`,
-    /// as defined in `dfns-encryption` library:
-    /// `<https://github.com/dfns-labs/trusted-dealer/>`
+    /// as defined in the `dfns-encryption` library.
+    /// See [here](https://github.com/dfns-labs/trusted-dealer/).
     #[serde_as(as = "Base64")]
     pub encryption_key: Vec<u8>,
     /// Key types (protocol and curve) supported by the WASM module
