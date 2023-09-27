@@ -17,14 +17,14 @@ use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
 /// Version number, ensures that server and client are compatible
-// const VERSION: u8 = 1;
+const VERSION: u8 = 1;
 
 /// Format of decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "")]
 pub struct KeySharePlaintext<E: Curve> {
     /// Version of library that generated the key share
-    pub version: dfns_trusted_dealer_core::version::VersionGuard,
+    pub version: dfns_trusted_dealer_core::version::VersionGuard<VERSION>,
     /// The secret share
     pub secret_share: SecretScalar<E>,
     /// `public_shares[j]` is commitment to secret share of j-th party
