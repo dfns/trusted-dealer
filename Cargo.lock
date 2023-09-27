@@ -372,6 +372,7 @@ dependencies = [
 name = "dfns-key-export-common"
 version = "0.1.0"
 dependencies = [
+ "dfns-trusted-dealer-core",
  "generic-ec",
  "generic-ec-zkp",
  "hex",

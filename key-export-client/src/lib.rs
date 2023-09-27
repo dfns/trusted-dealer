@@ -139,9 +139,9 @@ impl KeyExportContext {
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
                 let key_shares = parse_key_shares::<Secp256k1>(&decrypted_key_shares)
-                    .context("cannot parse the public key")?;
+                    .context("cannot parse a decrypted secret-key share")?;
                 let public_key = Point::<Secp256k1>::from_bytes(&response.public_key)
-                    .context("cannot parse a decrepted secret-key share")?;
+                    .context("cannot parse the public key")?;
                 interpolate_secret_key::<Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
             }

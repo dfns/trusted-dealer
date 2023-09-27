@@ -34,6 +34,7 @@ fn get_random_keys_and_shares<E: Curve>(
         .map(|(i, s)| KeySharePlaintext::<E> {
             index: NonZero::from_scalar(Scalar::from(i)).unwrap(),
             secret_share: s,
+            version: dfns_trusted_dealer_core::version::VersionGuard,
         })
         .collect::<Vec<KeySharePlaintext<E>>>();
 

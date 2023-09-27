@@ -16,7 +16,8 @@ use alloc::vec::Vec;
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
-/// Version number, ensures that server and client are compatible
+/// Version number, ensures that server and client
+/// use the same key-import-common library
 const VERSION: u8 = 1;
 
 /// Format of decrypted key share

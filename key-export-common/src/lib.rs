@@ -12,31 +12,20 @@ use serde_with::{base64::Base64, serde_as};
 
 use generic_ec::{Curve, NonZero, Scalar, SecretScalar};
 
+/// Version number, ensures that server and client
+/// use the same key-export-common library
+const VERSION: u8 = 1;
+
 /// Format of a decrypted key share
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "")]
 pub struct KeySharePlaintext<E: Curve> {
+    /// Version of library that generated the key share
+    pub version: dfns_trusted_dealer_core::version::VersionGuard<VERSION>,
     /// The index (evaluation point)
     pub index: NonZero<Scalar<E>>,
     /// The secret share
     pub secret_share: SecretScalar<E>,
-}
-
-/// Identity and encrypted share of a signer.
-#[serde_as]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct EncryptedShareAndIdentity {
-    /// Signer's identity
-    #[serde_as(as = "Base64")]
-    pub signer_identity: Vec<u8>,
-    /// Signers's key share.
-    ///
-    /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
-    /// Ciphertext and plaintext are in format defined in the
-    /// `dfns-trusted-dealer-core::encryption` library.
-    /// See [here](https://github.com/dfns-labs/trusted-dealer/).
-    #[serde_as(as = "Base64")]
-    pub encrypted_key_share: Vec<u8>,
 }
 
 /// Key export request that's intended to be sent from the client
@@ -103,6 +92,23 @@ pub enum KeyCurve {
     Ed25519,
 }
 
+/// Identity and encrypted share of a signer.
+#[serde_as]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct EncryptedShareAndIdentity {
+    /// Signer's identity
+    #[serde_as(as = "Base64")]
+    pub signer_identity: Vec<u8>,
+    /// Signers's key share.
+    ///
+    /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
+    /// Ciphertext and plaintext are in format defined in the
+    /// `dfns-trusted-dealer-core::encryption` library.
+    /// See [here](https://github.com/dfns-labs/trusted-dealer/).
+    #[serde_as(as = "Base64")]
+    pub encrypted_key_share: Vec<u8>,
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -112,6 +118,7 @@ mod tests {
 
         let mut rng = rand_dev::DevRng::new();
         let key_share_plaintext = crate::KeySharePlaintext {
+            version: dfns_trusted_dealer_core::version::VersionGuard,
             secret_share: generic_ec::SecretScalar::<E>::random(&mut rng),
             index: generic_ec::NonZero::<generic_ec::Scalar<E>>::random(&mut rng),
         };
