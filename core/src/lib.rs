@@ -4,11 +4,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod encryption;
+pub mod version;
 
 extern crate alloc;
 
 /// Version number, ensures that server and client are compatible
-///
-/// Version is embedded into the serialized encryption and decryption keys.
-/// Incrementing the version will force clients to update the library.
 const VERSION: u8 = 1;

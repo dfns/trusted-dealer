@@ -1,4 +1,7 @@
-//! Misc utils
+//! Versioning util.
+//!
+//! Version is embedded into all serialized structs (public key, signers info, etc.).
+/// Incrementing the version will force clients to update the library.
 
 /// Ensures the serialized version matches the version of the lib
 #[derive(Debug, Clone, Copy)]
