@@ -354,26 +354,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "dfns-encryption"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "generic-ec",
- "hex",
- "hkdf",
- "rand_core",
- "rand_dev",
- "serde",
- "serde_json",
- "sha2",
-]
-
-[[package]]
 name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
- "dfns-encryption",
  "dfns-key-export-common",
+ "dfns-trusted-dealer-core",
  "generic-ec",
  "generic-ec-zkp",
  "hex",
@@ -401,8 +386,8 @@ dependencies = [
 name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
- "dfns-encryption",
  "dfns-key-import-common",
+ "dfns-trusted-dealer-core",
  "serde_json",
  "wasm-bindgen",
 ]
@@ -413,9 +398,24 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "cggmp21",
- "dfns-encryption",
+ "dfns-trusted-dealer-core",
  "generic-ec",
  "generic-ec-zkp",
+ "hex",
+ "hkdf",
+ "rand_core",
+ "rand_dev",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
+name = "dfns-trusted-dealer-core"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "generic-ec",
  "hex",
  "hkdf",
  "rand_core",

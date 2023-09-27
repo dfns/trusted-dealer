@@ -1,21 +1,10 @@
-//! Asymmetric encryption scheme for key import and export.
+//! Asymmetric encryption scheme
 //!
 //! This library implements a public-key encryption scheme
 //! used in the key-export and key-import functionallities.
 
-#![forbid(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
-
-extern crate alloc;
-
 use aes_gcm::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
 use rand_core::{CryptoRng, RngCore};
-
-/// Version number, ensures that server and client are compatible
-///
-/// Version is embedded into the serialized encryption and decryption keys.
-/// Incrementing the version will force clients to update the library.
-const VERSION: u8 = 1;
 
 /// We fix our encryption scheme to secp256k1 curve
 type Curve = generic_ec::curves::Secp256k1;

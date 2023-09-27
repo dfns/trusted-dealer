@@ -32,8 +32,9 @@ pub struct EncryptedShareAndIdentity {
     /// Signers's key share.
     ///
     /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
-    /// Ciphertext and plaintext are in format defined by `dfns-encryption`
-    /// library. See [here](https://github.com/dfns-labs/trusted-dealer/).
+    /// Ciphertext and plaintext are in format defined in the
+    /// `dfns-trusted-dealer-core::encryption` library.
+    /// See [here](https://github.com/dfns-labs/trusted-dealer/).
     #[serde_as(as = "Base64")]
     pub encrypted_key_share: Vec<u8>,
 }
@@ -47,8 +48,8 @@ pub struct KeyExportRequest {
     pub wallet_id: String,
     /// An encryption key, to be used by signers to sign their key share.
     ///
-    /// It contains the bytes of a `dfns_key_import_common::encryption::EncryptionKey`,
-    /// as defined in the `dfns-encryption` library.
+    /// It contains the bytes of an `EncryptionKey`, defined in the
+    /// `dfns-trusted-dealer-core::encryption` library.
     /// See [here](https://github.com/dfns-labs/trusted-dealer/).
     #[serde_as(as = "Base64")]
     pub encryption_key: Vec<u8>,

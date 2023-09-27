@@ -14,13 +14,13 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-
-use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
+use rand_core::{self, RngCore};
 
 use dfns_key_export_common::{
     KeyCurve, KeyExportRequest, KeyExportResponse, KeyProtocol, KeySharePlaintext, SupportedScheme,
 };
-use rand_core::{self, RngCore};
+use dfns_trusted_dealer_core::encryption::DecryptionKey;
+use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
 
 const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     protocol: KeyProtocol::Cggmp21,
@@ -56,7 +56,7 @@ impl SecretKey {
 /// and parse the response of the Dfns API to extract the key of a wallet.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct KeyExportContext {
-    decryption_key: dfns_encryption::DecryptionKey,
+    decryption_key: DecryptionKey,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -78,7 +78,7 @@ impl KeyExportContext {
             .context("cryptographic randomness generator is not available")?;
 
         Ok(KeyExportContext {
-            decryption_key: dfns_encryption::DecryptionKey::generate(&mut rng),
+            decryption_key: DecryptionKey::generate(&mut rng),
         })
     }
 

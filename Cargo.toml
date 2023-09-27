@@ -4,5 +4,5 @@ members = [
   "./key-import-client",
   "./key-export-common",
   "./key-export-client",
-  "./encryption",
+  "./core",
 ]
