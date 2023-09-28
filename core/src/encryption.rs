@@ -4,6 +4,7 @@
 //! used in the key-export and key-import functionallities.
 
 use aes_gcm::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
+use base64::{engine::general_purpose, Engine as _};
 use rand_core::{CryptoRng, RngCore};
 
 /// We fix our encryption scheme to secp256k1 curve
@@ -159,7 +160,9 @@ impl serde::Serialize for EncryptionKey {
     where
         S: serde::Serializer,
     {
-        hex::encode(self.to_bytes()).serialize(serializer)
+        general_purpose::STANDARD
+            .encode(self.to_bytes())
+            .serialize(serializer)
     }
 }
 
@@ -169,7 +172,7 @@ impl<'de> serde::Deserialize<'de> for EncryptionKey {
         D: serde::Deserializer<'de>,
     {
         let encoded_ek = alloc::string::String::deserialize(deserializer)?;
-        let ek_bytes = hex::decode(encoded_ek).map_err(|e| {
+        let ek_bytes = general_purpose::STANDARD.decode(encoded_ek).map_err(|e| {
             <D::Error as serde::de::Error>::custom(alloc::format!("malformed hex string: {e}"))
         })?;
         Self::from_bytes(&ek_bytes).map_err(|e| {

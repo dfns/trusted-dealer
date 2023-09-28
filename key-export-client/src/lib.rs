@@ -90,7 +90,7 @@ impl KeyExportContext {
         let req = KeyExportRequest {
             wallet_id,
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
-            encryption_key: self.decryption_key.encryption_key().to_bytes().to_vec(),
+            encryption_key: self.decryption_key.encryption_key(),
         };
         serde_json::to_string(&req).context("cannot serialize key-export request")
     }

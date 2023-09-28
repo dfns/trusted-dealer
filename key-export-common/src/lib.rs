@@ -33,7 +33,7 @@ pub struct KeySharePlaintext<E: Curve> {
 /// Key export request that's intended to be sent from the client
 /// to Dfns API.
 #[serde_as]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct KeyExportRequest {
     /// The wallet-id whose private key will be extracted
     pub wallet_id: String,
@@ -42,8 +42,7 @@ pub struct KeyExportRequest {
     /// It contains the bytes of an `EncryptionKey`, defined in the
     /// `dfns-trusted-dealer-core::encryption` library.
     /// See [here](https://github.com/dfns-labs/trusted-dealer/).
-    #[serde_as(as = "Base64")]
-    pub encryption_key: Vec<u8>,
+    pub encryption_key: encryption::EncryptionKey,
     /// Key types (protocol and curve) supported by the WASM module
     /// that generated the KeyExportRequest.
     pub supported_schemes: Vec<SupportedScheme>,
@@ -66,7 +65,7 @@ pub struct KeyExportResponse {
 }
 
 /// The protocol and curve for which a key can be used
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SupportedScheme {
     /// protocol
     pub protocol: KeyProtocol,
@@ -75,7 +74,7 @@ pub struct SupportedScheme {
 }
 
 /// The protocol for which a key can be used
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum KeyProtocol {
     ///GG18
     Gg18,
@@ -86,7 +85,7 @@ pub enum KeyProtocol {
 }
 
 /// The curve for which a key can be used
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum KeyCurve {
     /// Secp256k1 curve
     Secp256k1,
@@ -114,6 +113,11 @@ pub struct EncryptedShareAndIdentity {
 #[cfg(test)]
 mod tests {
 
+    use alloc::{string::ToString, vec::Vec};
+    use dfns_trusted_dealer_core::encryption;
+
+    use crate::{KeyCurve, KeyExportRequest, KeyProtocol, SupportedScheme};
+
     #[test]
     fn parse_key_share_plaintext() {
         type E = generic_ec::curves::Secp256k1;
@@ -127,5 +131,21 @@ mod tests {
         let key_share_plaintext = serde_json::to_string(&key_share_plaintext).unwrap();
         // println!("{:?}", &key_share_plaintext1);
         let _: crate::KeySharePlaintext<E> = serde_json::from_str(&key_share_plaintext).unwrap();
+    }
+
+    #[test]
+    fn serialize_deserialize_key_export_request() {
+        let mut rng = rand_dev::DevRng::new();
+        let req = KeyExportRequest {
+            wallet_id: "w_xxx".to_string(),
+            encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
+            supported_schemes: Vec::from([SupportedScheme {
+                protocol: KeyProtocol::BinanceEcdsa,
+                curve: KeyCurve::Secp256k1,
+            }]),
+        };
+        let req_ser = serde_json::to_vec(&req).unwrap();
+        let req_deser: KeyExportRequest = serde_json::from_slice(&req_ser).unwrap();
+        assert_eq!(req, req_deser);
     }
 }
