@@ -93,7 +93,7 @@ impl std::error::Error for Error {}
 /// List of signers
 ///
 /// Lists all the signers: their identity and encryption keys. List is sorted by signers identities.
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct SignersInfo {
     // This list must be sorted by `identity`
     signers: Vec<SignerInfo>,
@@ -127,7 +127,7 @@ impl<'de> serde::Deserialize<'de> for SignersInfo {
 
 /// Signer info
 #[serde_as]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SignerInfo {
     /// Signer public encryption key
     pub encryption_key: encryption::EncryptionKey,
@@ -155,4 +155,26 @@ pub struct KeyShareCiphertext {
     /// Identity of signer that's supposed to receive that key share
     #[serde_as(as = "Base64")]
     pub recipient_identity: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+    use dfns_trusted_dealer_core::encryption;
+
+    use crate::{SignerInfo, SignersInfo};
+
+    #[test]
+    fn serialize_deserialize_signers_info() {
+        let mut rng = rand_dev::DevRng::new();
+        let signers = SignersInfo {
+            signers: Vec::from([SignerInfo {
+                encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
+                identity: Vec::new(),
+            }]),
+        };
+        let signers_ser = serde_json::to_vec(&signers).unwrap();
+        let signers_deser: SignersInfo = serde_json::from_slice(&signers_ser).unwrap();
+        assert_eq!(signers, signers_deser);
+    }
 }
