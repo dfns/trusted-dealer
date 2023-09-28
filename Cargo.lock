@@ -416,6 +416,7 @@ dependencies = [
  "rand_dev",
  "serde",
  "serde_json",
+ "serde_with 1.14.0",
  "sha2",
 ]
 

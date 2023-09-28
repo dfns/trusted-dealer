@@ -12,6 +12,7 @@ pub use dfns_trusted_dealer_core::encryption;
 pub use {generic_ec, generic_ec::curves::Secp256k1, rand_core};
 
 use alloc::vec::Vec;
+use serde_with::{base64::Base64, serde_as};
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
@@ -125,12 +126,13 @@ impl<'de> serde::Deserialize<'de> for SignersInfo {
 }
 
 /// Signer info
+#[serde_as]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SignerInfo {
     /// Signer public encryption key
     pub encryption_key: encryption::EncryptionKey,
     /// Signer identity
-    #[serde(with = "hex::serde")]
+    #[serde_as(as = "Base64")]
     pub identity: Vec<u8>,
 }
 
@@ -144,12 +146,13 @@ pub struct KeyImportRequest {
 /// Encrypted key share
 ///
 /// Contains key share ciphertext and destination signer identity.
+#[serde_as]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct KeyShareCiphertext {
     /// Key share ciphertext
-    #[serde(with = "hex::serde")]
+    #[serde_as(as = "Base64")]
     pub encrypted_key_share: Vec<u8>,
     /// Identity of signer that's supposed to receive that key share
-    #[serde(with = "hex::serde")]
+    #[serde_as(as = "Base64")]
     pub recipient_identity: Vec<u8>,
 }
