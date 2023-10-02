@@ -25,6 +25,10 @@ type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
 
+/// Version number, embedded in serialized encryption and decryption keys,
+/// ensures that users of this library use the same key format.
+const VERSION: u8 = 1;
+
 /// Public encryption key
 #[derive(Debug, PartialEq, Eq)]
 pub struct EncryptionKey {
@@ -80,7 +84,7 @@ impl DecryptionKey {
     /// Serializes decryption key to bytes
     pub fn to_bytes(&self) -> [u8; 33] {
         let mut output = [0u8; 33];
-        output[0] = crate::VERSION;
+        output[0] = VERSION;
         output[1..].copy_from_slice(&self.scalar.as_ref().to_be_bytes());
         output
     }
@@ -90,7 +94,7 @@ impl DecryptionKey {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());
         }
-        if bytes[0] != crate::VERSION {
+        if bytes[0] != VERSION {
             return Err(Reason::VersionMismatched(bytes[0]).into());
         }
         let scalar = SecretScalar::from_be_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
@@ -137,7 +141,7 @@ impl EncryptionKey {
     /// Serialized encryption key to bytes
     pub fn to_bytes(&self) -> [u8; 34] {
         let mut output = [0u8; 34];
-        output[0] = crate::VERSION;
+        output[0] = VERSION;
         output[1..].copy_from_slice(&self.point.to_bytes(true));
         output
     }
@@ -147,7 +151,7 @@ impl EncryptionKey {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());
         }
-        if bytes[0] != crate::VERSION {
+        if bytes[0] != VERSION {
             return Err(Reason::VersionMismatched(bytes[0]).into());
         }
         let point = Point::from_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
@@ -196,7 +200,7 @@ enum Reason {
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error(Reason::VersionMismatched(v)) => f.write_fmt(core::format_args!("parsing failed: version of data (v{v}) doesn't match version supported by the library (v{})", crate::VERSION)),
+            Error(Reason::VersionMismatched(v)) => f.write_fmt(core::format_args!("parsing failed: version of data (v{v}) doesn't match version supported by the library (v{VERSION})")),
             Error(Reason::InvalidKey) => f.write_str("invalid key"),
             Error(Reason::Encrypt) => f.write_str("encryption error"),
             Error(Reason::Decrypt) => f.write_str("decryption error"),

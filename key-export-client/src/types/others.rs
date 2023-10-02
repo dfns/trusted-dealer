@@ -2,12 +2,12 @@ use alloc::string::{String, ToString};
 use dfns_key_export_common::KeyExportRequest;
 
 /// Key-export request type to be returned on non-wasm32 arch.
-pub type RequestType = KeyExportRequest;
+pub type Request = KeyExportRequest;
 /// Error type to be returned on non-wasm32 arch.
-pub type ErrorType = KeyExportError;
+pub type Error = KeyExportError;
 
 /// Key-export request type on non-wasm32 arch is KeyExportRequest.
-pub fn format_request(req: KeyExportRequest) -> Result<RequestType, ErrorType> {
+pub fn format_request(req: KeyExportRequest) -> Result<Request, Error> {
     Ok(req)
 }
 

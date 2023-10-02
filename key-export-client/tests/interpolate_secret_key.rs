@@ -29,7 +29,7 @@ fn get_random_keys_and_shares<E: Curve>(
         secret_shares
     };
 
-    let shares = (1..n + 1)
+    let shares = (1..=n)
         .zip(secret_shares)
         .map(|(i, s)| KeySharePlaintext::<E> {
             index: NonZero::from_scalar(Scalar::from(i)).unwrap(),

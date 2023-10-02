@@ -65,7 +65,7 @@ impl KeyExportContext {
     /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
     ///
     /// Throws `Error` in case of failure.
-    pub fn new() -> Result<KeyExportContext, types::ErrorType> {
+    pub fn new() -> Result<KeyExportContext, types::Error> {
         let mut rng = rand_core::OsRng;
         // Sample random 10 bytes to see that CSPRNG is available
         let mut sample = [0u8; 10];
@@ -81,7 +81,7 @@ impl KeyExportContext {
     /// export the key of the wallet with the given `wallet_id`.
     ///
     /// Throws `Error` in case of failure.
-    pub fn build_key_export_request(&self) -> Result<types::RequestType, types::ErrorType> {
+    pub fn build_key_export_request(&self) -> Result<types::Request, types::Error> {
         let req = KeyExportRequest {
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
             encryption_key: self.decryption_key.encryption_key(),
@@ -94,7 +94,7 @@ impl KeyExportContext {
     /// It returns the private key as a big endian byte array,
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
-    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, types::ErrorType> {
+    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, types::Error> {
         // Parse response
         let response: KeyExportResponse =
             serde_json::from_str(&response).context("cannot parse key-export response")?;
@@ -125,7 +125,7 @@ impl KeyExportContext {
                     .context("cannot decrypt a key share from key-export response")?;
                 Ok(buffer)
             })
-            .collect::<Result<Vec<_>, types::ErrorType>>()?;
+            .collect::<Result<Vec<_>, types::Error>>()?;
         // decrypted_key_shares is a vector of decrypted but serialized KeySharePlaintext<E>
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
@@ -225,18 +225,18 @@ impl core::fmt::Display for InterpolateKeyError {
 }
 
 trait Context<T, E> {
-    fn context(self, ctx: &str) -> Result<T, types::ErrorType>;
+    fn context(self, ctx: &str) -> Result<T, types::Error>;
 }
 
 impl<T, E> Context<T, E> for Result<T, E>
 where
     E: core::fmt::Display,
 {
-    fn context(self, ctx: &str) -> Result<T, types::ErrorType> {
-        self.map_err(|e| types::ErrorType::new(&alloc::format!("{ctx}: {e}")))
+    fn context(self, ctx: &str) -> Result<T, types::Error> {
+        self.map_err(|e| types::Error::new(&alloc::format!("{ctx}: {e}")))
     }
 }
 
-fn new_error(ctx: &str) -> types::ErrorType {
-    types::ErrorType::new(ctx)
+fn new_error(ctx: &str) -> types::Error {
+    types::Error::new(ctx)
 }
