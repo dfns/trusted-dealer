@@ -1,5 +1,7 @@
-use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError};
-use dfns_key_export_common::KeySharePlaintext;
+use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError, KeyExportContext};
+use dfns_key_export_common::{
+    EncryptedShareAndIdentity, KeyCurve, KeyExportResponse, KeySharePlaintext,
+};
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 
 fn get_random_keys_and_shares<E: Curve>(
@@ -92,4 +94,68 @@ fn interpolate_key() {
     // Interpolate the secret key with 3 shares. Should still work.
     let secret_key_interp = interpolate_secret_key::<E>(&shares[..4], &public_key).unwrap();
     assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+}
+
+#[test]
+fn key_export_context() {
+    type E = generic_ec::curves::Secp256k1;
+    let mut rng = rand_dev::DevRng::new();
+    let (secret_key, public_key, shares) = get_random_keys_and_shares::<E>(3, 5);
+
+    // create a new KeyExportContext and a KeyExportRequest
+    let ctx = KeyExportContext::new().map_err(|_| {}).unwrap();
+    let req = ctx.build_key_export_request().map_err(|_| {}).unwrap();
+
+    // Create a KeyExportResponse
+    let enc_key = req.encryption_key;
+    let encrypted_shares_and_ids = shares
+        .iter()
+        .map(|s| {
+            let mut buffer = serde_json::to_vec(s).unwrap();
+            enc_key.encrypt(&mut rng, &[], &mut buffer).unwrap();
+            EncryptedShareAndIdentity {
+                signer_identity: Vec::new(),
+                encrypted_key_share: buffer,
+            }
+        })
+        .collect::<Vec<_>>();
+    let resp = KeyExportResponse {
+        min_signers: 3,
+        public_key: public_key.to_bytes(true).to_vec(),
+        protocol: dfns_key_export_common::KeyProtocol::Cggmp21,
+        curve: KeyCurve::Secp256k1,
+        encrypted_shares: encrypted_shares_and_ids.clone(),
+    };
+
+    // Call ctx.recover_secret_key(). Should recover the secret key.
+    let recovered_secret_key = ctx
+        .recover_secret_key(serde_json::to_string(&resp).unwrap())
+        .expect("this call should not return error");
+    assert_eq!(
+        secret_key.as_ref().to_be_bytes().to_vec(),
+        recovered_secret_key.to_bytes_be()
+    );
+
+    // Try an unsuported protocol. ctx.recover_secret_key() should return an error
+    let resp = KeyExportResponse {
+        min_signers: 3,
+        public_key: public_key.to_bytes(true).to_vec(),
+        protocol: dfns_key_export_common::KeyProtocol::Gg18,
+        curve: KeyCurve::Secp256k1,
+        encrypted_shares: encrypted_shares_and_ids.clone(),
+    };
+    let recovered_secret_key = ctx.recover_secret_key(serde_json::to_string(&resp).unwrap());
+    assert!(recovered_secret_key.is_err());
+
+    // Try with a difference public key.  ctx.recover_secret_key() should return an error
+    let (_, public_key, _) = get_random_keys_and_shares::<E>(3, 5);
+    let resp = KeyExportResponse {
+        min_signers: 3,
+        public_key: public_key.to_bytes(true).to_vec(),
+        protocol: dfns_key_export_common::KeyProtocol::Cggmp21,
+        curve: KeyCurve::Secp256k1,
+        encrypted_shares: encrypted_shares_and_ids,
+    };
+    let recovered_secret_key = ctx.recover_secret_key(serde_json::to_string(&resp).unwrap());
+    assert!(recovered_secret_key.is_err());
 }

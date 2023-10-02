@@ -139,8 +139,12 @@ impl KeyExportContext {
                 interpolate_secret_key::<Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
             }
-            (_, _) => {
-                return Err(new_error("the combination of protocol and curve for this key is not supported for key export"));
+            (protocol, curve) => {
+                return Err(new_error(&alloc::format!(
+                    "protocol {:?} using curve {:?} is not supported for key export",
+                    &protocol,
+                    &curve
+                )));
             }
         };
         Ok(SecretKey(secret_key))

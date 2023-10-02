@@ -93,7 +93,7 @@ pub enum KeyCurve {
 
 /// Identity and encrypted share of a signer.
 #[serde_as]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EncryptedShareAndIdentity {
     /// Signer's identity
     #[serde_as(as = "Base64")]
