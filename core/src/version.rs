@@ -25,8 +25,7 @@ impl<'de, const V: u8> serde::Deserialize<'de> for VersionGuard<V> {
         if version != V {
             Err(<D::Error as serde::de::Error>::custom(&alloc::format!(
                 "you seem to be using old version of the library: version field of serialized \
-                data (v{version}) doesn't match version supported by this library (v{})",
-                V
+                data (v{version}) doesn't match version supported by this library (v{V})"
             )))
         } else {
             Ok(Self)
