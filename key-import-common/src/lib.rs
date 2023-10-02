@@ -94,6 +94,7 @@ impl std::error::Error for Error {}
 ///
 /// Lists all the signers: their identity and encryption keys. List is sorted by signers identities.
 #[derive(Debug, PartialEq, serde::Serialize)]
+#[serde(transparent)]
 pub struct SignersInfo {
     // This list must be sorted by `identity`
     signers: Vec<SignerInfo>,
@@ -167,11 +168,19 @@ mod tests {
     #[test]
     fn serialize_deserialize_signers_info() {
         let mut rng = rand_dev::DevRng::new();
+
+        // SignerInfo
+        let signer_info = SignerInfo {
+            encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
+            identity: Vec::new(),
+        };
+        let signer_ser = serde_json::to_vec(&signer_info).unwrap();
+        let signer_deser: SignerInfo = serde_json::from_slice(&signer_ser).unwrap();
+        assert_eq!(signer_info, signer_deser);
+
+        // SignersInfo
         let signers = SignersInfo {
-            signers: Vec::from([SignerInfo {
-                encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
-                identity: Vec::new(),
-            }]),
+            signers: Vec::from([signer_info]),
         };
         let signers_ser = serde_json::to_vec(&signers).unwrap();
         let signers_deser: SignersInfo = serde_json::from_slice(&signers_ser).unwrap();
