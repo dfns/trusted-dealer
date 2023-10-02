@@ -84,12 +84,8 @@ impl KeyExportContext {
     /// export the key of the wallet with the given `wallet_id`.
     ///
     /// Throws `Error` in case of failure.
-    pub fn build_key_export_request(
-        &self,
-        wallet_id: String,
-    ) -> Result<utils::RequestType, utils::ErrorType> {
+    pub fn build_key_export_request(&self) -> Result<utils::RequestType, utils::ErrorType> {
         let req = KeyExportRequest {
-            wallet_id,
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
             encryption_key: self.decryption_key.encryption_key(),
         };

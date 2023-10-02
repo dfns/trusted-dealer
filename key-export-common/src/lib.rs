@@ -9,7 +9,7 @@ extern crate alloc;
 
 pub use dfns_trusted_dealer_core::{encryption, version};
 
-use alloc::{string::String, vec::Vec};
+use alloc::vec::Vec;
 use serde_with::{base64::Base64, serde_as};
 
 use generic_ec::{Curve, NonZero, Scalar, SecretScalar};
@@ -35,8 +35,6 @@ pub struct KeySharePlaintext<E: Curve> {
 #[serde_as]
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct KeyExportRequest {
-    /// The wallet-id whose private key will be extracted
-    pub wallet_id: String,
     /// An encryption key, to be used by signers to sign their key share.
     ///
     /// It contains the bytes of an `EncryptionKey`, defined in the
@@ -113,7 +111,7 @@ pub struct EncryptedShareAndIdentity {
 #[cfg(test)]
 mod tests {
 
-    use alloc::{string::ToString, vec::Vec};
+    use alloc::vec::Vec;
     use dfns_trusted_dealer_core::encryption;
 
     use crate::{KeyCurve, KeyExportRequest, KeyProtocol, SupportedScheme};
@@ -137,7 +135,6 @@ mod tests {
     fn serialize_deserialize_key_export_request() {
         let mut rng = rand_dev::DevRng::new();
         let req = KeyExportRequest {
-            wallet_id: "w_xxx".to_string(),
             encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
             supported_schemes: Vec::from([SupportedScheme {
                 protocol: KeyProtocol::BinanceEcdsa,
