@@ -153,7 +153,7 @@ impl KeyExportContext {
     }
 }
 
-/// Parse a collection of decrepted shares as a vector of``KeySharePlaintext<E>``.
+/// Parse a collection of decrypted shares as a vector of `KeySharePlaintext<E>`.
 fn parse_key_shares<E: Curve>(
     key_shares: &[Vec<u8>],
 ) -> Result<Vec<KeySharePlaintext<E>>, serde_json::Error> {
