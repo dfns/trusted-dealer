@@ -370,7 +370,6 @@ dependencies = [
  "hex",
  "rand_core",
  "rand_dev",
- "serde",
  "serde-wasm-bindgen",
  "serde_json",
  "wasm-bindgen",
