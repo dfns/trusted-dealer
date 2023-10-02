@@ -370,6 +370,8 @@ dependencies = [
  "hex",
  "rand_core",
  "rand_dev",
+ "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "wasm-bindgen",
 ]
@@ -1161,6 +1163,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30e27d1e4fd7659406c492fd6cfaf2066ba8773de45ca75e855590f856dc34a9"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-wasm-bindgen"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30c9933e5689bd420dc6c87b7a1835701810cbc10cd86a26e4da45b73e6b1d78"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]

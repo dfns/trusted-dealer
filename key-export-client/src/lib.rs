@@ -8,12 +8,22 @@
 #![forbid(missing_docs)]
 #![no_std]
 
+// Because JsValue is not suported in non-wasm32 architectures,
+// this code is compiled to return a different error type and
+// request type in wasm32 and non-wasm32 architectures.
+#[cfg(not(target_arch = "wasm32"))]
+mod utils_non_wasm32;
+#[cfg(target_arch = "wasm32")]
+mod utils_wasm32;
+
+#[cfg(not(target_arch = "wasm32"))]
+use utils_non_wasm32 as utils;
+#[cfg(target_arch = "wasm32")]
+use utils_wasm32 as utils;
+
 extern crate alloc;
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{string::String, vec::Vec};
 use rand_core::{self, RngCore};
 
 use dfns_key_export_common::{
@@ -27,23 +37,11 @@ const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     curve: KeyCurve::Secp256k1,
 }];
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-// We are using KeyExportContext and the returned ErrorType in `tests/integration.rs` of the
-// `dfns-signer-tests` package. As JsError::new() is not suported in non-wasm32 architectures,
-// this code is compiled to return a KeyExportError in non-wasm32 architectures
-// and a JsError in wasm32 architecture.
-#[cfg(target_arch = "wasm32")]
-type ErrorType = JsError;
-#[cfg(not(target_arch = "wasm32"))]
-type ErrorType = KeyExportError;
-
 /// Secret key to be exported
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
 pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
 impl SecretKey {
     /// Serializes the secret key in big-endian format.
     pub fn to_bytes_be(&self) -> Vec<u8> {
@@ -54,12 +52,12 @@ impl SecretKey {
 /// This class can be used to generate an encryption/decryption key pair,
 /// create a key-export request (which needs to be forwarded to the Dfns API),
 /// and parse the response of the Dfns API to extract the key of a wallet.
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
 pub struct KeyExportContext {
     decryption_key: DecryptionKey,
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
 impl KeyExportContext {
     /// Generates a new encryption/decryption key pair.
     ///
@@ -70,7 +68,7 @@ impl KeyExportContext {
     /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
     ///
     /// Throws `Error` in case of failure.
-    pub fn new() -> Result<KeyExportContext, ErrorType> {
+    pub fn new() -> Result<KeyExportContext, utils::ErrorType> {
         let mut rng = rand_core::OsRng;
         // Sample random 10 bytes to see that CSPRNG is available
         let mut sample = [0u8; 10];
@@ -86,13 +84,16 @@ impl KeyExportContext {
     /// export the key of the wallet with the given `wallet_id`.
     ///
     /// Throws `Error` in case of failure.
-    pub fn build_key_export_request(&self, wallet_id: String) -> Result<String, ErrorType> {
+    pub fn build_key_export_request(
+        &self,
+        wallet_id: String,
+    ) -> Result<utils::RequestType, utils::ErrorType> {
         let req = KeyExportRequest {
             wallet_id,
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
             encryption_key: self.decryption_key.encryption_key(),
         };
-        serde_json::to_string(&req).context("cannot serialize key-export request")
+        utils::format_request(req)
     }
 
     /// Parses the response from Dfns API and recovers the private key.
@@ -100,7 +101,7 @@ impl KeyExportContext {
     /// It returns the private key as a big endian byte array,
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
-    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, ErrorType> {
+    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, utils::ErrorType> {
         // Parse response
         let response: KeyExportResponse =
             serde_json::from_str(&response).context("cannot parse key-export response")?;
@@ -131,7 +132,7 @@ impl KeyExportContext {
                     .context("cannot decrypt a key share from key-export response")?;
                 Ok(buffer)
             })
-            .collect::<Result<Vec<_>, ErrorType>>()?;
+            .collect::<Result<Vec<_>, utils::ErrorType>>()?;
         // decrypted_key_shares is a vector of decrypted but serialized KeySharePlaintext<E>
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
@@ -231,39 +232,18 @@ impl core::fmt::Display for InterpolateKeyError {
 }
 
 trait Context<T, E> {
-    fn context(self, ctx: &str) -> Result<T, ErrorType>;
+    fn context(self, ctx: &str) -> Result<T, utils::ErrorType>;
 }
 
 impl<T, E> Context<T, E> for Result<T, E>
 where
     E: core::fmt::Display,
 {
-    fn context(self, ctx: &str) -> Result<T, ErrorType> {
-        self.map_err(|e| ErrorType::new(&alloc::format!("{ctx}: {e}")))
+    fn context(self, ctx: &str) -> Result<T, utils::ErrorType> {
+        self.map_err(|e| utils::ErrorType::new(&alloc::format!("{ctx}: {e}")))
     }
 }
 
-fn new_error(ctx: &str) -> ErrorType {
-    ErrorType::new(ctx)
-}
-
-/// Error type to be returned on non-wasm32 arch.
-#[derive(Debug)]
-pub struct KeyExportError {
-    desc: String,
-}
-
-impl KeyExportError {
-    #[allow(dead_code)]
-    fn new(s: &str) -> Self {
-        KeyExportError {
-            desc: s.to_string(),
-        }
-    }
-}
-
-impl core::fmt::Display for KeyExportError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str(&self.desc)
-    }
+fn new_error(ctx: &str) -> utils::ErrorType {
+    utils::ErrorType::new(ctx)
 }
