@@ -40,6 +40,7 @@ pub struct KeyExportRequest {
     /// It contains the bytes of an `EncryptionKey`, defined in the
     /// `dfns-trusted-dealer-core::encryption` library.
     /// See [here](https://github.com/dfns-labs/trusted-dealer/).
+    ///
     pub encryption_key: encryption::EncryptionKey,
     /// Key types (protocol and curve) supported by the WASM module
     /// that generated the KeyExportRequest.
@@ -97,7 +98,7 @@ pub enum KeyCurve {
 pub struct EncryptedShareAndIdentity {
     /// Signer's identity
     #[serde_as(as = "Base64")]
-    pub signer_identity: Vec<u8>,
+    pub signer_id: Vec<u8>,
     /// Signers's key share.
     ///
     /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
