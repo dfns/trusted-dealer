@@ -163,10 +163,10 @@ pub fn decrypt_key_shares(
         let mut buffer = share.encrypted_key_share.clone();
         match decryption_key.decrypt(&[], &mut buffer) {
             Ok(_) => decrypted_shares_and_ids.push(DecryptedShareAndIdentity {
-                signer_identity: share.signer_identity.clone(),
+                signer_identity: share.signer_id.clone(),
                 decrypted_key_share: buffer,
             }),
-            Err(_) => invalid_ids.push(&share.signer_identity),
+            Err(_) => invalid_ids.push(&share.signer_id),
         }
     }
 

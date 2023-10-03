@@ -132,7 +132,7 @@ fn key_export_context() {
             let mut buffer = serde_json::to_vec(s).unwrap();
             enc_key.encrypt(&mut rng, &[], &mut buffer).unwrap();
             EncryptedShareAndIdentity {
-                signer_identity: Vec::new(),
+                signer_id: Vec::new(),
                 encrypted_key_share: buffer,
             }
         })
@@ -200,7 +200,7 @@ fn decrypt_invalid_shares() {
                 .unwrap();
             EncryptedShareAndIdentity {
                 //we use some public key as the identity of the signer
-                signer_identity: decryption_key.encryption_key().to_bytes().to_vec(),
+                signer_id: decryption_key.encryption_key().to_bytes().to_vec(),
                 encrypted_key_share: buffer,
             }
         })
