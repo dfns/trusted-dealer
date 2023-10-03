@@ -34,6 +34,7 @@ pub struct KeySharePlaintext<E: Curve> {
 /// to Dfns API.
 #[serde_as]
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyExportRequest {
     /// An encryption key, to be used by signers to sign their key share.
     ///
@@ -49,6 +50,7 @@ pub struct KeyExportRequest {
 
 /// Key export response, sent from Dfns API to the WASM module.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyExportResponse {
     /// The threshold of the specified wallet.
     pub min_signers: u32,
@@ -65,6 +67,7 @@ pub struct KeyExportResponse {
 
 /// The protocol and curve for which a key can be used
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SupportedScheme {
     /// protocol
     pub protocol: KeyProtocol,
@@ -95,6 +98,7 @@ pub enum KeyCurve {
 /// Identity and encrypted share of a signer.
 #[serde_as]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EncryptedShareAndIdentity {
     /// Signer's identity
     #[serde_as(as = "Base64")]
