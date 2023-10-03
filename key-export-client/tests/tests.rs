@@ -1,8 +1,9 @@
 use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError, KeyExportContext};
-use dfns_key_export_common::{
-    EncryptedShareAndIdentity, KeyCurve, KeyExportResponse, KeySharePlaintext,
+use dfns_key_export_common::{EncryptedShareAndIdentity, KeyExportResponse, KeySharePlaintext};
+use dfns_trusted_dealer_core::{
+    encryption,
+    types::{KeyCurve, KeyProtocol},
 };
-use dfns_trusted_dealer_core::encryption;
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 
 fn get_random_keys_and_shares<E: Curve>(
@@ -140,7 +141,7 @@ fn key_export_context() {
     let resp = KeyExportResponse {
         min_signers: 3,
         public_key: public_key.to_bytes(true).to_vec(),
-        protocol: dfns_key_export_common::KeyProtocol::Cggmp21,
+        protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids.clone(),
     };
@@ -158,7 +159,7 @@ fn key_export_context() {
     let resp = KeyExportResponse {
         min_signers: 3,
         public_key: public_key.to_bytes(true).to_vec(),
-        protocol: dfns_key_export_common::KeyProtocol::Gg18,
+        protocol: KeyProtocol::Gg18,
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids.clone(),
     };
@@ -170,7 +171,7 @@ fn key_export_context() {
     let resp = KeyExportResponse {
         min_signers: 3,
         public_key: public_key.to_bytes(true).to_vec(),
-        protocol: dfns_key_export_common::KeyProtocol::Cggmp21,
+        protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids,
     };
