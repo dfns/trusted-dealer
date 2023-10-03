@@ -71,7 +71,7 @@ impl SecretKey {
 pub fn build_key_import_request(
     signers_info: &SignersInfo,
     secret_key: &SecretKey,
-) -> Result<Vec<u8>, JsError> {
+) -> Result<JsValue, JsError> {
     let mut rng = rand_core::OsRng;
 
     {
@@ -117,7 +117,8 @@ pub fn build_key_import_request(
         curve: KeyCurve::Secp256k1,
         encrypted_key_shares,
     };
-    serde_json::to_vec(&req).context("serialize a request")
+
+    serde_wasm_bindgen::to_value(&req).context("cannot serialize key-import request")
 }
 
 trait Context<T, E> {
