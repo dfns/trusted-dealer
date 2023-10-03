@@ -119,7 +119,6 @@ impl KeyExportContext {
             ));
         };
 
-        // Decrypt key shares
         let decrypted_key_shares_and_ids = decrypt_key_shares(
             &self.decryption_key,
             &response.encrypted_shares,
@@ -174,7 +173,7 @@ pub fn decrypt_key_shares(
     if decrypted_shares_and_ids.len() >= threshold as usize {
         Ok(decrypted_shares_and_ids)
     } else {
-        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be decrypted: ".to_string(), &invalid_ids);
+        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be decrypted:".to_string(), &invalid_ids);
         Err(new_error(&error_msg))
     }
 }
@@ -200,7 +199,7 @@ pub fn parse_key_shares<E: Curve>(
     if parsed_shares.len() >= threshold as usize {
         Ok(parsed_shares)
     } else {
-        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be parsed: ".to_string(), &invalid_ids);
+        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be parsed:".to_string(), &invalid_ids);
         Err(new_error(&error_msg))
     }
 }
@@ -213,7 +212,7 @@ fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, ty
 /// Utility function to encode signer ids as Base64 and append them to a string
 fn append_signer_ids_to_error_msg(error_msg: String, invalid_ids: &[&Vec<u8>]) -> String {
     let error_msg = invalid_ids.iter().fold(error_msg, |acc, id| {
-        acc + &general_purpose::STANDARD_NO_PAD.encode(id) + " "
+        acc + " " + &general_purpose::STANDARD_NO_PAD.encode(id)
     });
     error_msg
 }
