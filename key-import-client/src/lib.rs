@@ -33,7 +33,7 @@ impl SignersInfo {
     /// Parses signers info from response obtained from Dfns API
     ///
     /// Throws `Error` if response is malformed
-    pub fn from_response(resp: &[u8]) -> Result<SignersInfo, JsError> {
+    pub fn new(resp: &[u8]) -> Result<SignersInfo, JsError> {
         let info = serde_json::from_slice(resp).context("couldn't parse the response")?;
         Ok(Self(info))
     }
@@ -48,6 +48,7 @@ impl SecretKey {
     /// Parses the secret key in big-endian format (the most widely-used format)
     ///
     /// Throws `Error` if secret key is invalid
+    #[wasm_bindgen(js_name = fromBytesBE)]
     pub fn from_bytes_be(bytes: &[u8]) -> Result<SecretKey, JsError> {
         let scalar = generic_ec::SecretScalar::from_be_bytes(bytes)
             .context("couldn't parse the secret key")?;
@@ -67,7 +68,7 @@ impl SecretKey {
 /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
 ///
 /// Throws `Error` in case of failure
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = buildKeyImportRequest)]
 pub fn build_key_import_request(
     signers_info: &SignersInfo,
     secret_key: &SecretKey,
