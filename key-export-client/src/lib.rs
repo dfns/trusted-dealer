@@ -46,6 +46,7 @@ pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SecretKey {
     /// Serializes the secret key in big-endian format.
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toBytesBE))]
     pub fn to_bytes_be(&self) -> Vec<u8> {
         self.0.as_ref().to_be_bytes().to_vec()
     }
@@ -86,6 +87,7 @@ impl KeyExportContext {
     /// export the key of the wallet with the given `wallet_id`.
     ///
     /// Throws `Error` in case of failure.
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyExportRequest))]
     pub fn build_key_export_request(&self) -> Result<types::Request, types::Error> {
         let req = KeyExportRequest {
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
@@ -99,6 +101,7 @@ impl KeyExportContext {
     /// It returns the private key as a big endian byte array,
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = recoverSecretKey))]
     pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, types::Error> {
         // Parse response
         let response: KeyExportResponse =
