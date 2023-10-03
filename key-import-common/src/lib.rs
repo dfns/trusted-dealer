@@ -95,7 +95,7 @@ impl std::error::Error for Error {}
 ///
 /// Lists all the signers: their identity and encryption keys. List is sorted by signers identities.
 #[derive(Debug, PartialEq, serde::Serialize)]
-#[serde(transparent)]
+#[serde(transparent, rename_all = "camelCase")]
 pub struct SignersInfo {
     // This list must be sorted by `identity`
     signers: Vec<SignerInfo>,
@@ -130,6 +130,7 @@ impl<'de> serde::Deserialize<'de> for SignersInfo {
 /// Signer info
 #[serde_as]
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SignerInfo {
     /// Signer public encryption key
     pub encryption_key: encryption::EncryptionKey,
@@ -140,6 +141,7 @@ pub struct SignerInfo {
 
 /// Key import request that's intended to be sent to Dfns API
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyImportRequest {
     /// The threshold of the specified wallet.
     pub min_signers: u32,
@@ -156,6 +158,7 @@ pub struct KeyImportRequest {
 /// Contains key share ciphertext and destination signer identity.
 #[serde_as]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyShareCiphertext {
     /// Key share ciphertext
     #[serde_as(as = "Base64")]
