@@ -47,6 +47,8 @@ fn get_random_keys_and_shares<E: Curve>(
 #[test]
 fn interpolate_key() {
     type E = generic_ec::curves::Secp256k1;
+
+    // First tests are done on threshold 3 out of 5
     let (secret_key, public_key, mut shares) = get_random_keys_and_shares::<E>(3, 5);
 
     // Interpolate the secret key from all shares.
@@ -87,6 +89,29 @@ fn interpolate_key() {
     // Interpolate the secret key with 3 shares. Should still work.
     let secret_key_interp = interpolate_secret_key::<E>(&shares[..4], &public_key).unwrap();
     assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+
+    // Now test with threshold 5 out of 5
+    let (secret_key, public_key, shares) = get_random_keys_and_shares::<E>(5, 5);
+
+    // Interpolate the secret key from all shares. Should succeed.
+    let secret_key_interp = interpolate_secret_key(&shares, &public_key).unwrap();
+    assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+
+    // Now test with threshold 1 out of 5
+    let (secret_key, public_key, shares) = get_random_keys_and_shares::<E>(1, 5);
+
+    // Interpolate the secret key from 2 shares. Should succeed.
+    let secret_key_interp = interpolate_secret_key(&shares[..2], &public_key).unwrap();
+    assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+
+    // Interpolate the secret key from 1 share. Should succeed.
+    let secret_key_interp = interpolate_secret_key(&shares[..1], &public_key).unwrap();
+    assert_eq!(secret_key.as_ref(), secret_key_interp.as_ref());
+
+    // Try calling interpolate_secret_key() with no shares as input. This should return an error.
+    let res = interpolate_secret_key::<E>(&shares[..0], &public_key);
+    assert!(res.is_err());
+    assert!(matches!(res.expect_err(""), InterpolateKeyError::NoShares));
 }
 
 #[test]
