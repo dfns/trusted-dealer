@@ -108,6 +108,16 @@ pub struct EncryptedShareAndIdentity {
     pub encrypted_key_share: Vec<u8>,
 }
 
+/// Struct used to store decrypted key shares
+#[derive(Debug, Clone)]
+pub struct DecryptedShareAndIdentity {
+    /// Signer's identity
+    pub signer_identity: Vec<u8>,
+    /// Signers's key share.
+    /// It is an encrypted `dfns_key_export_common::KeySharePlaintext`.
+    pub decrypted_key_share: Vec<u8>,
+}
+
 #[cfg(test)]
 mod tests {
 

@@ -2,6 +2,7 @@ use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError, KeyExp
 use dfns_key_export_common::{
     EncryptedShareAndIdentity, KeyCurve, KeyExportResponse, KeySharePlaintext,
 };
+use dfns_trusted_dealer_core::encryption;
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 
 fn get_random_keys_and_shares<E: Curve>(
@@ -62,14 +63,6 @@ fn interpolate_key() {
     assert!(matches!(
         res.unwrap_err(),
         InterpolateKeyError::CannotVerifySecretKey
-    ));
-
-    //Interpolate with 1 shares. This should return an error.
-    let res = interpolate_secret_key::<E>(&shares[..1], &public_key);
-    assert!(res.is_err());
-    assert!(matches!(
-        res.expect_err(""),
-        InterpolateKeyError::NotEnoughShares
     ));
 
     // Interpolate and compare against a random public key. Should return an error.
@@ -158,4 +151,46 @@ fn key_export_context() {
     };
     let recovered_secret_key = ctx.recover_secret_key(serde_json::to_string(&resp).unwrap());
     assert!(recovered_secret_key.is_err());
+}
+
+#[test]
+fn decrypt_invalid_shares() {
+    type E = generic_ec::curves::Secp256k1;
+    let mut rng = rand_dev::DevRng::new();
+
+    // Split random secret
+    let (_, _, shares) = get_random_keys_and_shares::<E>(3, 5);
+
+    //Generate encryption/decryption key-pair
+    let decryption_key = encryption::DecryptionKey::generate(&mut rng);
+
+    // Create a vector of encrypted shares and ids
+    let encrypted_shares_and_ids = shares
+        .iter()
+        .map(|s| {
+            let mut buffer = serde_json::to_vec(s).unwrap();
+            decryption_key
+                .encryption_key()
+                .encrypt(&mut rng, &[], &mut buffer)
+                .unwrap();
+            EncryptedShareAndIdentity {
+                //we use some public key as the identity of the signer
+                signer_identity: decryption_key.encryption_key().to_bytes().to_vec(),
+                encrypted_key_share: buffer,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    // Decrypt them and parse them. This should succeed
+    let decrypted_key_shares_and_ids =
+        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids, 3)
+            .unwrap();
+    let _ =
+        dfns_key_export_client::parse_key_shares::<E>(&decrypted_key_shares_and_ids, 3).unwrap();
+
+    // Now try to decrypt them with a diffent decryption key. It should return an error.
+    let decryption_key = encryption::DecryptionKey::generate(&mut rng);
+    let res =
+        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids, 3);
+    assert!(res.is_err());
 }

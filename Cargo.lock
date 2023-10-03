@@ -363,6 +363,7 @@ dependencies = [
 name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
+ "base64 0.21.4",
  "dfns-key-export-common",
  "dfns-trusted-dealer-core",
  "generic-ec",

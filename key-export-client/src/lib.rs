@@ -20,11 +20,16 @@ use wasm_bindgen::prelude::*;
 
 extern crate alloc;
 
-use alloc::{string::String, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use base64::{engine::general_purpose, Engine as _};
 use rand_core::{self, RngCore};
 
 use dfns_key_export_common::{
-    KeyCurve, KeyExportRequest, KeyExportResponse, KeyProtocol, KeySharePlaintext, SupportedScheme,
+    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyCurve, KeyExportRequest,
+    KeyExportResponse, KeyProtocol, KeySharePlaintext, SupportedScheme,
 };
 use dfns_trusted_dealer_core::encryption::DecryptionKey;
 use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
@@ -108,34 +113,26 @@ impl KeyExportContext {
             .len()
             .try_into()
             .context("length of key_holders overflows u16")?;
-        if !(2 <= min_signers && min_signers <= n) {
+        if !(1 <= min_signers && min_signers <= n) {
             return Err(new_error(
-                "threshold doesn't meet requirements: 2 <= min_signers <= n",
+                "invalid threshold: min_signers must be at least 1 and at most the number of the given shares",
             ));
         };
 
         // Decrypt key shares
-        let decrypted_key_shares = response
-            .encrypted_shares
-            .iter()
-            .map(|share| {
-                let mut buffer = share.encrypted_key_share.clone();
-                self.decryption_key
-                    .decrypt(&[], &mut buffer)
-                    .context("cannot decrypt a key share from key-export response")?;
-                Ok(buffer)
-            })
-            .collect::<Result<Vec<_>, types::Error>>()?;
-        // decrypted_key_shares is a vector of decrypted but serialized KeySharePlaintext<E>
+        let decrypted_key_shares_and_ids = decrypt_key_shares(
+            &self.decryption_key,
+            &response.encrypted_shares,
+            min_signers,
+        )?;
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
         // perform the interpolation, and return the private key.
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
-                let key_shares = parse_key_shares::<Secp256k1>(&decrypted_key_shares)
-                    .context("cannot parse a decrypted secret-key share")?;
-                let public_key = Point::<Secp256k1>::from_bytes(&response.public_key)
-                    .context("cannot parse the public key")?;
+                let key_shares =
+                    parse_key_shares::<Secp256k1>(&decrypted_key_shares_and_ids, min_signers)?;
+                let public_key = parse_public_key(&response.public_key)?;
                 interpolate_secret_key::<Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
             }
@@ -151,14 +148,74 @@ impl KeyExportContext {
     }
 }
 
-/// Parse a collection of decrypted shares as a vector of `KeySharePlaintext<E>`.
-fn parse_key_shares<E: Curve>(
-    key_shares: &[Vec<u8>],
-) -> Result<Vec<KeySharePlaintext<E>>, serde_json::Error> {
-    key_shares
-        .iter()
-        .map(|share| serde_json::from_slice(share))
-        .collect::<Result<Vec<KeySharePlaintext<E>>, _>>()
+/// Decrypt a collection of encrypted key-shares,
+/// requring that `threshold` valid (i.e., successfully decrypted) shares be found.
+/// Returns and error if less than `threshold` valid shares are found,
+/// containg the ids of the seners of invalid shares.
+pub fn decrypt_key_shares(
+    decryption_key: &DecryptionKey,
+    encrypted_shares_and_ids: &[EncryptedShareAndIdentity],
+    threshold: u16,
+) -> Result<Vec<DecryptedShareAndIdentity>, types::Error> {
+    let mut decrypted_shares_and_ids = Vec::new();
+    let mut invalid_ids = Vec::new();
+
+    for share in encrypted_shares_and_ids {
+        let mut buffer = share.encrypted_key_share.clone();
+        match decryption_key.decrypt(&[], &mut buffer) {
+            Ok(_) => decrypted_shares_and_ids.push(DecryptedShareAndIdentity {
+                signer_identity: share.signer_identity.clone(),
+                decrypted_key_share: buffer,
+            }),
+            Err(_) => invalid_ids.push(&share.signer_identity),
+        }
+    }
+
+    if decrypted_shares_and_ids.len() >= threshold as usize {
+        Ok(decrypted_shares_and_ids)
+    } else {
+        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be decrypted: ".to_string(), &invalid_ids);
+        Err(new_error(&error_msg))
+    }
+}
+
+/// Parse a collection of decrypted shares as `KeySharePlaintext<E>`,
+/// requring that `threshold` valid (i.e., successfully parsed) shares be found.
+/// Returns and error if less than `threshold` valid shares are found,
+/// containg the ids of the seners of invalid shares.
+pub fn parse_key_shares<E: Curve>(
+    key_shares_and_ids: &[DecryptedShareAndIdentity],
+    threshold: u16,
+) -> Result<Vec<KeySharePlaintext<E>>, types::Error> {
+    let mut parsed_shares = Vec::new();
+    let mut invalid_ids = Vec::new();
+
+    for share in key_shares_and_ids {
+        match serde_json::from_slice::<KeySharePlaintext<E>>(&share.decrypted_key_share) {
+            Ok(parsed_share) => parsed_shares.push(parsed_share),
+            Err(_) => invalid_ids.push(&share.signer_identity),
+        };
+    }
+
+    if parsed_shares.len() >= threshold as usize {
+        Ok(parsed_shares)
+    } else {
+        let error_msg = append_signer_ids_to_error_msg("not enough shares: the signers with the following idenities returned shares that cannot be parsed: ".to_string(), &invalid_ids);
+        Err(new_error(&error_msg))
+    }
+}
+
+/// Parse the public key
+fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, types::Error> {
+    Point::<E>::from_bytes(public_key_bytes).context("cannot parse the public key")
+}
+
+/// Utility function to encode signer ids as Base64 and append them to a string
+fn append_signer_ids_to_error_msg(error_msg: String, invalid_ids: &[&Vec<u8>]) -> String {
+    let error_msg = invalid_ids.iter().fold(error_msg, |acc, id| {
+        acc + &general_purpose::STANDARD_NO_PAD.encode(id) + " "
+    });
+    error_msg
 }
 
 /// Perform interpolation.
@@ -171,8 +228,8 @@ pub fn interpolate_secret_key<E: Curve>(
 ) -> Result<SecretScalar<E>, InterpolateKeyError> {
     // Validate input
     let n = key_shares.len();
-    if n <= 1 {
-        return Err(InterpolateKeyError::NotEnoughShares);
+    if n == 0 {
+        return Err(InterpolateKeyError::NoShares);
     };
 
     // Extract evaluation indexes and secret-share values
@@ -206,7 +263,7 @@ pub fn interpolate_secret_key<E: Curve>(
 #[derive(Debug)]
 pub enum InterpolateKeyError {
     /// Input to interpolate_secret_key() contains not enough shares
-    NotEnoughShares,
+    NoShares,
     /// Internal error. Largange coefficient for zero index
     ZeroIndex,
     /// Internal error. Malformed indexes at secret reconstruction
@@ -219,7 +276,7 @@ pub enum InterpolateKeyError {
 impl core::fmt::Display for InterpolateKeyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let msg = match self {
-            InterpolateKeyError::NotEnoughShares => "not enough shares given as input",
+            InterpolateKeyError::NoShares => "not shares given as input to the interpolation algorithm",
             InterpolateKeyError::ZeroIndex => "index is zero when it's suppposed to be non-zero",
             InterpolateKeyError::MalformedIndexes => "malformed share indexes",
             InterpolateKeyError::CannotVerifySecretKey => "the interpolated secret key cannot be verified against the provided public key (the secret key shares or the public key are invalid",
