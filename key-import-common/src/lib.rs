@@ -12,6 +12,7 @@ pub use dfns_trusted_dealer_core::encryption;
 pub use {generic_ec, generic_ec::curves::Secp256k1, rand_core};
 
 use alloc::vec::Vec;
+use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 use serde_with::{base64::Base64, serde_as};
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
@@ -111,7 +112,7 @@ impl SignersInfo {
 
 impl From<Vec<SignerInfo>> for SignersInfo {
     fn from(mut signers: Vec<SignerInfo>) -> Self {
-        signers.sort_unstable_by(|s1, s2| s1.identity.cmp(&s2.identity));
+        signers.sort_unstable_by(|s1, s2| s1.signer_id.cmp(&s2.signer_id));
         Self { signers }
     }
 }
@@ -134,14 +135,20 @@ pub struct SignerInfo {
     pub encryption_key: encryption::EncryptionKey,
     /// Signer identity
     #[serde_as(as = "Base64")]
-    pub identity: Vec<u8>,
+    pub signer_id: Vec<u8>,
 }
 
 /// Key import request that's intended to be sent to Dfns API
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct KeyImportRequest {
+    /// The threshold of the specified wallet.
+    pub min_signers: u32,
+    /// The protocol the imported key will be used for
+    pub protocol: KeyProtocol,
+    /// The curve the imported key will be used for
+    pub curve: KeyCurve,
     /// List of encrypted key shares per signer
-    pub key_shares_list: Vec<KeyShareCiphertext>,
+    pub encrypted_key_shares: Vec<KeyShareCiphertext>,
 }
 
 /// Encrypted key share
@@ -155,7 +162,7 @@ pub struct KeyShareCiphertext {
     pub encrypted_key_share: Vec<u8>,
     /// Identity of signer that's supposed to receive that key share
     #[serde_as(as = "Base64")]
-    pub recipient_identity: Vec<u8>,
+    pub signer_id: Vec<u8>,
 }
 
 #[cfg(test)]
@@ -172,7 +179,7 @@ mod tests {
         // SignerInfo
         let signer_info = SignerInfo {
             encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
-            identity: Vec::new(),
+            signer_id: Vec::new(),
         };
         let signer_ser = serde_json::to_vec(&signer_info).unwrap();
         let signer_deser: SignerInfo = serde_json::from_slice(&signer_ser).unwrap();

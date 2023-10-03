@@ -7,6 +7,7 @@
 
 extern crate alloc;
 
+use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 pub use dfns_trusted_dealer_core::{encryption, version};
 
 use alloc::vec::Vec;
@@ -57,9 +58,9 @@ pub struct KeyExportResponse {
     /// The public key of the specified wallet.
     #[serde(with = "hex::serde")]
     pub public_key: Vec<u8>,
-    /// The protocol the exported scheme can be used for
+    /// The protocol the exported key can be used for
     pub protocol: KeyProtocol,
-    /// The curve the exported scheme can be used for
+    /// The curve the exported key can be used for
     pub curve: KeyCurve,
     /// Identities and encrypted shares of wallet's key holders.
     pub encrypted_shares: Vec<EncryptedShareAndIdentity>,
@@ -73,28 +74,6 @@ pub struct SupportedScheme {
     pub protocol: KeyProtocol,
     /// curve
     pub curve: KeyCurve,
-}
-
-/// The protocol for which a key can be used.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum KeyProtocol {
-    ///GG18
-    Gg18,
-    ///Binance EDDSA
-    BinanceEddsa,
-    ///CGGMP21
-    Cggmp21,
-}
-
-/// The curve for which a key can be used
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum KeyCurve {
-    /// Secp256k1 curve
-    Secp256k1,
-    /// Ed25519 curve
-    Ed25519,
 }
 
 /// Identity and encrypted share of a signer.

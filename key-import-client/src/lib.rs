@@ -11,6 +11,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+use common::KeyImportRequest;
+use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 use wasm_bindgen::prelude::*;
 
 use dfns_key_import_common::{
@@ -102,15 +104,18 @@ pub fn build_key_import_request(
                 .encrypt(&mut rng, &[], &mut key_share)?;
             Ok(common::KeyShareCiphertext {
                 encrypted_key_share: key_share,
-                recipient_identity: recipient.identity.clone(),
+                signer_id: recipient.signer_id.clone(),
             })
         })
         .collect::<Result<Vec<_>, dfns_trusted_dealer_core::encryption::Error>>()
         .map_err(|_| JsError::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it
-    let req = common::KeyImportRequest {
-        key_shares_list: encrypted_key_shares,
+    let req = KeyImportRequest {
+        min_signers: 3,
+        protocol: KeyProtocol::Cggmp21,
+        curve: KeyCurve::Secp256k1,
+        encrypted_key_shares,
     };
     serde_json::to_vec(&req).context("serialize a request")
 }

@@ -25,10 +25,13 @@ use base64::{engine::general_purpose, Engine as _};
 use rand_core::{self, RngCore};
 
 use dfns_key_export_common::{
-    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyCurve, KeyExportRequest,
-    KeyExportResponse, KeyProtocol, KeySharePlaintext, SupportedScheme,
+    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse,
+    KeySharePlaintext, SupportedScheme,
 };
-use dfns_trusted_dealer_core::encryption::DecryptionKey;
+use dfns_trusted_dealer_core::{
+    encryption::DecryptionKey,
+    types::{KeyCurve, KeyProtocol},
+};
 use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
 
 const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
