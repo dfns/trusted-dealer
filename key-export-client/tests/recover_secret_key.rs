@@ -75,7 +75,7 @@ fn interpolate_key() {
     let res = interpolate_secret_key::<E>(&shares, &random_pk);
     assert!(res.is_err());
     assert!(matches!(
-        res.expect_err(""),
+        res.unwrap_err(),
         InterpolateKeyError::CannotVerifySecretKey
     ));
 
@@ -111,7 +111,7 @@ fn interpolate_key() {
     // Try calling interpolate_secret_key() with no shares as input. This should return an error.
     let res = interpolate_secret_key::<E>(&shares[..0], &public_key);
     assert!(res.is_err());
-    assert!(matches!(res.expect_err(""), InterpolateKeyError::NoShares));
+    assert!(matches!(res.unwrap_err(), InterpolateKeyError::NoShares));
 }
 
 #[test]

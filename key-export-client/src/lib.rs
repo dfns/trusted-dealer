@@ -148,10 +148,10 @@ impl KeyExportContext {
     }
 }
 
-/// Decrypt a collection of encrypted key-shares,
-/// requring that `threshold` valid (i.e., successfully decrypted) shares be found.
-/// Returns and error if less than `threshold` valid shares are found,
-/// containg the ids of the seners of invalid shares.
+/// Decrypt a collection of `EncryptedShareAndIdentity`.
+///
+/// It requires that `threshold` valid (i.e., successfully decrypted) shares be found,
+/// and returns and error otherwise, containg the ids of the signers of invalid shares.
 pub fn decrypt_key_shares(
     decryption_key: &DecryptionKey,
     encrypted_shares_and_ids: &[EncryptedShareAndIdentity],
@@ -179,10 +179,10 @@ pub fn decrypt_key_shares(
     }
 }
 
-/// Parse a collection of decrypted shares as `KeySharePlaintext<E>`,
-/// requring that `threshold` valid (i.e., successfully parsed) shares be found.
-/// Returns and error if less than `threshold` valid shares are found,
-/// containg the ids of the seners of invalid shares.
+/// Parse a collection of `DecryptedShareAndIdentity` as `KeySharePlaintext<E>`.
+///
+/// It requres that `threshold` valid (i.e., successfully parsed) shares be found,
+/// and returns and error otherwise, containg the ids of the signers of invalid shares.
 pub fn parse_key_shares<E: Curve>(
     key_shares_and_ids: &[DecryptedShareAndIdentity],
     threshold: u16,
