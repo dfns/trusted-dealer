@@ -208,14 +208,13 @@ fn decrypt_invalid_shares() {
 
     // Decrypt them and parse them. This should succeed
     let decrypted_key_shares_and_ids =
-        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids, 3)
+        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids)
             .unwrap();
-    let _ =
-        dfns_key_export_client::parse_key_shares::<E>(&decrypted_key_shares_and_ids, 3).unwrap();
+    let _ = dfns_key_export_client::parse_key_shares::<E>(&decrypted_key_shares_and_ids).unwrap();
 
     // Now try to decrypt them with a diffent decryption key. It should return an error.
     let decryption_key = encryption::DecryptionKey::generate(&mut rng);
     let res =
-        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids, 3);
+        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids);
     assert!(res.is_err());
 }
