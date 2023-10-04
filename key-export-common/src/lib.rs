@@ -75,19 +75,21 @@ pub struct SupportedScheme {
     pub curve: KeyCurve,
 }
 
-/// The protocol for which a key can be used
+/// The protocol for which a key can be used.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum KeyProtocol {
     ///GG18
     Gg18,
     ///Binance EDDSA
-    BinanceEcdsa,
+    BinanceEddsa,
     ///CGGMP21
     Cggmp21,
 }
 
 /// The curve for which a key can be used
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum KeyCurve {
     /// Secp256k1 curve
     Secp256k1,
@@ -152,7 +154,7 @@ mod tests {
         let req = KeyExportRequest {
             encryption_key: encryption::DecryptionKey::generate(&mut rng).encryption_key(),
             supported_schemes: Vec::from([SupportedScheme {
-                protocol: KeyProtocol::BinanceEcdsa,
+                protocol: KeyProtocol::BinanceEddsa,
                 curve: KeyCurve::Secp256k1,
             }]),
         };
