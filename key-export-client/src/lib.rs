@@ -113,9 +113,9 @@ impl KeyExportContext {
             .len()
             .try_into()
             .context("length of key_holders overflows u16")?;
-        if !(1 <= min_signers && min_signers <= n) {
+        if !(2 <= min_signers && min_signers <= n) {
             return Err(new_error(
-                "invalid threshold: min_signers must be at least 1 and at most the number of the given shares",
+                "invalid threshold: min_signers must be at least 2 and at most the number of the given shares",
             ));
         };
 
