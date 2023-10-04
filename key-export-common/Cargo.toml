@@ -1,0 +1,19 @@
+[package]
+name = "dfns-key-export-common"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = "1"
+serde_json = "1"
+serde_with = { version = "1", features = ["base64"] }
+hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}
+rand_core = { version = "0.6", default-features = false }
+
+dfns-trusted-dealer-core = { path = "../core" }
+generic-ec = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
+generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m", default-features = false, features = ["serde", "alloc"] }
+
+[dev-dependencies]
+rand_dev = "0.1"

@@ -8,22 +8,16 @@
 
 extern crate alloc;
 
-pub use {generic_ec, rand_core};
-
-pub mod encryption;
-pub mod utils;
+pub use dfns_trusted_dealer_core::encryption;
+pub use {generic_ec, generic_ec::curves::Secp256k1, rand_core};
 
 use alloc::vec::Vec;
 
 use generic_ec::{Curve, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
-pub use generic_ec::curves::Secp256k1;
-
-/// Version number, ensures that server and client are compatible
-///
-/// Version is embedded into all serialized structs (public key, signers info, etc.).
-/// Incrementing the version will force clients to update the library.
+/// Version number, ensures that server and client
+/// use the same key-import-common library
 const VERSION: u8 = 1;
 
 /// Format of decrypted key share
@@ -31,7 +25,7 @@ const VERSION: u8 = 1;
 #[serde(bound = "")]
 pub struct KeySharePlaintext<E: Curve> {
     /// Version of library that generated the key share
-    pub version: utils::VersionGuard,
+    pub version: dfns_trusted_dealer_core::version::VersionGuard<VERSION>,
     /// The secret share
     pub secret_share: SecretScalar<E>,
     /// `public_shares[j]` is commitment to secret share of j-th party
@@ -75,7 +69,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     Ok(secret_shares
         .into_iter()
         .map(|secret_share| KeySharePlaintext {
-            version: utils::VersionGuard,
+            version: dfns_trusted_dealer_core::version::VersionGuard,
             secret_share,
             public_shares: public_shares.clone(),
         })

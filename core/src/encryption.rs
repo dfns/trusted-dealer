@@ -1,6 +1,10 @@
 //! Asymmetric encryption scheme
+//!
+//! This library implements a public-key encryption scheme
+//! used in the key-export and key-import functionallities.
 
 use aes_gcm::aead::{AeadCore, AeadInPlace, Buffer, KeyInit};
+use base64::{engine::general_purpose, Engine as _};
 use rand_core::{CryptoRng, RngCore};
 
 /// We fix our encryption scheme to secp256k1 curve
@@ -20,6 +24,10 @@ type AesNonce = aes_gcm::Nonce<<Aes as AeadCore>::NonceSize>;
 
 /// Size of serialized `eph_key`
 const EPH_KEY_SIZE: usize = 33;
+
+/// Version number, embedded in serialized encryption and decryption keys,
+/// ensures that users of this library use the same key format.
+const VERSION: u8 = 1;
 
 /// Public encryption key
 #[derive(Debug, PartialEq, Eq)]
@@ -76,7 +84,7 @@ impl DecryptionKey {
     /// Serializes decryption key to bytes
     pub fn to_bytes(&self) -> [u8; 33] {
         let mut output = [0u8; 33];
-        output[0] = crate::VERSION;
+        output[0] = VERSION;
         output[1..].copy_from_slice(&self.scalar.as_ref().to_be_bytes());
         output
     }
@@ -86,7 +94,7 @@ impl DecryptionKey {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());
         }
-        if bytes[0] != crate::VERSION {
+        if bytes[0] != VERSION {
             return Err(Reason::VersionMismatched(bytes[0]).into());
         }
         let scalar = SecretScalar::from_be_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
@@ -133,7 +141,7 @@ impl EncryptionKey {
     /// Serialized encryption key to bytes
     pub fn to_bytes(&self) -> [u8; 34] {
         let mut output = [0u8; 34];
-        output[0] = crate::VERSION;
+        output[0] = VERSION;
         output[1..].copy_from_slice(&self.point.to_bytes(true));
         output
     }
@@ -143,7 +151,7 @@ impl EncryptionKey {
         if bytes.is_empty() {
             return Err(Reason::InvalidKey.into());
         }
-        if bytes[0] != crate::VERSION {
+        if bytes[0] != VERSION {
             return Err(Reason::VersionMismatched(bytes[0]).into());
         }
         let point = Point::from_bytes(&bytes[1..]).map_err(|_| Reason::InvalidKey)?;
@@ -156,7 +164,9 @@ impl serde::Serialize for EncryptionKey {
     where
         S: serde::Serializer,
     {
-        hex::encode(self.to_bytes()).serialize(serializer)
+        general_purpose::STANDARD
+            .encode(self.to_bytes())
+            .serialize(serializer)
     }
 }
 
@@ -166,7 +176,7 @@ impl<'de> serde::Deserialize<'de> for EncryptionKey {
         D: serde::Deserializer<'de>,
     {
         let encoded_ek = alloc::string::String::deserialize(deserializer)?;
-        let ek_bytes = hex::decode(encoded_ek).map_err(|e| {
+        let ek_bytes = general_purpose::STANDARD.decode(encoded_ek).map_err(|e| {
             <D::Error as serde::de::Error>::custom(alloc::format!("malformed hex string: {e}"))
         })?;
         Self::from_bytes(&ek_bytes).map_err(|e| {
@@ -190,7 +200,7 @@ enum Reason {
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error(Reason::VersionMismatched(v)) => f.write_fmt(core::format_args!("parsing failed: version of data (v{v}) doesn't match version supported by the library (v{})", crate::VERSION)),
+            Error(Reason::VersionMismatched(v)) => f.write_fmt(core::format_args!("parsing failed: version of data (v{v}) doesn't match version supported by the library (v{VERSION})")),
             Error(Reason::InvalidKey) => f.write_str("invalid key"),
             Error(Reason::Encrypt) => f.write_str("encryption error"),
             Error(Reason::Decrypt) => f.write_str("decryption error"),

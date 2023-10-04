@@ -1,5 +1,9 @@
 [workspace]
+resolver = "2"
 members = [
-  "./common",
-  "./client",
+  "./key-import-common",
+  "./key-import-client",
+  "./key-export-common",
+  "./key-export-client",
+  "./core",
 ]
