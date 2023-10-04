@@ -1,8 +1,9 @@
 use dfns_key_export_client::KeyExportContext;
-use dfns_key_export_common::{
-    EncryptedShareAndIdentity, KeyCurve, KeyExportResponse, KeyProtocol, KeySharePlaintext,
+use dfns_key_export_common::{EncryptedShareAndIdentity, KeyExportResponse, KeySharePlaintext};
+use dfns_trusted_dealer_core::{
+    encryption,
+    types::{KeyCurve, KeyProtocol},
 };
-use dfns_trusted_dealer_core::encryption;
 use generic_ec::{NonZero, Point, SecretScalar};
 
 fn main() {
