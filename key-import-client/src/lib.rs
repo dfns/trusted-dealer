@@ -33,8 +33,8 @@ impl SignersInfo {
     /// Parses signers info from response obtained from Dfns API
     ///
     /// Throws `Error` if response is malformed
-    pub fn new(resp: &[u8]) -> Result<SignersInfo, JsError> {
-        let info = serde_json::from_slice(resp).context("couldn't parse the response")?;
+    pub fn new(resp: JsValue) -> Result<SignersInfo, JsError> {
+        let info = serde_wasm_bindgen::from_value(resp).context("couldn't parse the response")?;
         Ok(Self(info))
     }
 }
