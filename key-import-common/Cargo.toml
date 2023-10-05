@@ -13,6 +13,7 @@ generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m"
 
 rand_core = { version = "0.6", default-features = false }
 serde = "1"
+serde_with = { version = "1", features = ["base64"] }
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}
 
 aes-gcm = "0.10"

@@ -11,6 +11,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+use common::KeyImportRequest;
+use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 use wasm_bindgen::prelude::*;
 
 use dfns_key_import_common::{
@@ -31,8 +33,8 @@ impl SignersInfo {
     /// Parses signers info from response obtained from Dfns API
     ///
     /// Throws `Error` if response is malformed
-    pub fn from_response(resp: &[u8]) -> Result<SignersInfo, JsError> {
-        let info = serde_json::from_slice(resp).context("couldn't parse the response")?;
+    pub fn new(resp: JsValue) -> Result<SignersInfo, JsError> {
+        let info = serde_wasm_bindgen::from_value(resp).context("couldn't parse the response")?;
         Ok(Self(info))
     }
 }
@@ -46,6 +48,7 @@ impl SecretKey {
     /// Parses the secret key in big-endian format (the most widely-used format)
     ///
     /// Throws `Error` if secret key is invalid
+    #[wasm_bindgen(js_name = fromBytesBE)]
     pub fn from_bytes_be(bytes: &[u8]) -> Result<SecretKey, JsError> {
         let scalar = generic_ec::SecretScalar::from_be_bytes(bytes)
             .context("couldn't parse the secret key")?;
@@ -65,11 +68,11 @@ impl SecretKey {
 /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
 ///
 /// Throws `Error` in case of failure
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = buildKeyImportRequest)]
 pub fn build_key_import_request(
     signers_info: &SignersInfo,
     secret_key: &SecretKey,
-) -> Result<Vec<u8>, JsError> {
+) -> Result<JsValue, JsError> {
     let mut rng = rand_core::OsRng;
 
     {
@@ -102,17 +105,21 @@ pub fn build_key_import_request(
                 .encrypt(&mut rng, &[], &mut key_share)?;
             Ok(common::KeyShareCiphertext {
                 encrypted_key_share: key_share,
-                recipient_identity: recipient.identity.clone(),
+                signer_id: recipient.signer_id.clone(),
             })
         })
         .collect::<Result<Vec<_>, dfns_trusted_dealer_core::encryption::Error>>()
         .map_err(|_| JsError::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it
-    let req = common::KeyImportRequest {
-        key_shares_list: encrypted_key_shares,
+    let req = KeyImportRequest {
+        min_signers: 3,
+        protocol: KeyProtocol::Cggmp21,
+        curve: KeyCurve::Secp256k1,
+        encrypted_key_shares,
     };
-    serde_json::to_vec(&req).context("serialize a request")
+
+    serde_wasm_bindgen::to_value(&req).context("cannot serialize key-import request")
 }
 
 trait Context<T, E> {
