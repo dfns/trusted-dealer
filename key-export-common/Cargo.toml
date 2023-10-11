@@ -17,3 +17,6 @@ generic-ec-zkp = { git = "https://github.com/dfns-labs/generic-ec", branch = "m"
 
 [dev-dependencies]
 rand_dev = "0.1"
+
+[features]
+std = ["dfns-trusted-dealer-core/std"]
