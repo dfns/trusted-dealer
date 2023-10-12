@@ -3,6 +3,7 @@
 /// The protocol for which a key can be used.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 pub enum KeyProtocol {
     ///GG18
     Gg18,
@@ -15,6 +16,7 @@ pub enum KeyProtocol {
 /// The curve for which a key can be used
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 pub enum KeyCurve {
     /// Secp256k1 curve
     Secp256k1,
