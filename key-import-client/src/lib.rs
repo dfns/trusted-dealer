@@ -56,10 +56,14 @@ impl SecretKey {
     }
 }
 
-/// Builds a request body that needs to be sent to Dfns API in order to import given key
+/// Builds a request body that needs to be sent to Dfns API in order to import the given key.
 ///
-/// Takes a secret key to be imported, and signers info (needs to be retrieved from Dfns API). Returns
-/// a body of the request that needs to be sent to Dfns API in order to import given key
+/// Takes as input the `secret_key` to be imported, `signers_info` (contains information
+/// about the _n_ key holders, needs to be retrieved from Dfns API)
+/// `min_signers` (which will be the threshold and has to satisfy _2 ≤ min_signers ≤ n_),
+/// and the `protocol` and `curve` for which the imported key will be used.
+///
+/// Returns a body of the request that needs to be sent to Dfns API in order to import the given key.
 ///
 /// Requires a global secure randomness generator to be available, that can be either [Web Crypto API]
 /// or [Node JS crypto module]. If neither of them is available, throws `Error`.
@@ -70,20 +74,45 @@ impl SecretKey {
 /// Throws `Error` in case of failure
 #[wasm_bindgen(js_name = buildKeyImportRequest)]
 pub fn build_key_import_request(
-    signers_info: &SignersInfo,
     secret_key: &SecretKey,
+    signers_info: &SignersInfo,
+    min_signers: u16,
+    protocol: KeyProtocol,
+    curve: KeyCurve,
 ) -> Result<JsValue, JsError> {
     let mut rng = rand_core::OsRng;
 
-    {
-        // Sample random 10 bytes to see that CSPRNG is available
-        let mut sample = [0u8; 10];
-        rng.try_fill_bytes(&mut sample)
-            .map_err(|_| JsError::new("cryptographic randomness generator is not available"))?;
+    // Sample random 10 bytes to see that CSPRNG is available
+    let mut sample = [0u8; 10];
+    rng.try_fill_bytes(&mut sample)
+        .map_err(|_| JsError::new("cryptographic randomness generator is not available"))?;
+
+    let n: u16 = signers_info
+        .0
+        .signers()
+        .len()
+        .try_into()
+        .context("length of signers_info overflows u16")?;
+
+    if !(2 <= min_signers && min_signers <= n) {
+        return Err(JsError::new(
+            "invalid threshold: min_signers must be at least 2 and at most the length of signers_info",
+        ));
+    };
+
+    match (protocol, curve) {
+        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {}
+        (p, c) => {
+            return Err(JsError::new(&alloc::format!(
+                "protocol {:?} using curve {:?} is not supported for key import",
+                &p,
+                &c
+            )));
+        }
     }
 
     // Split the secret key into the shares
-    let key_shares = common::split_secret_key(&mut rng, 3, 5, &secret_key.0)
+    let key_shares = common::split_secret_key(&mut rng, min_signers, n, &secret_key.0)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share

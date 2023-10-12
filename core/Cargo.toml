@@ -13,6 +13,7 @@ base64 = "0.21"
 aes-gcm = "0.10"
 hkdf = "0.12"
 sha2 = "0.10"
+wasm-bindgen = "0.2.84"
 
 [dev-dependencies]
 rand_dev = "0.1"

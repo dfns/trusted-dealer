@@ -434,6 +434,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "wasm-bindgen",
 ]
 
 [[package]]
