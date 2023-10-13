@@ -8,7 +8,7 @@
 extern crate alloc;
 
 use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
-pub use dfns_trusted_dealer_core::{encryption, version, types};
+pub use dfns_trusted_dealer_core::{encryption, types, version};
 
 use alloc::vec::Vec;
 use serde_with::{base64::Base64, serde_as};
