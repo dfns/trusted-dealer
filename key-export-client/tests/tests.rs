@@ -148,7 +148,7 @@ fn key_export_context() {
 
     // Call ctx.recover_secret_key(). Should recover the secret key.
     let recovered_secret_key = ctx
-        .recover_secret_key(serde_json::to_string(&resp).unwrap())
+        .recover_secret_key(resp)
         .expect("this call should not return error");
     assert_eq!(
         secret_key.as_ref().to_be_bytes().to_vec(),
@@ -163,7 +163,7 @@ fn key_export_context() {
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids.clone(),
     };
-    let recovered_secret_key = ctx.recover_secret_key(serde_json::to_string(&resp).unwrap());
+    let recovered_secret_key = ctx.recover_secret_key(resp);
     assert!(recovered_secret_key.is_err());
 
     // Try with a difference public key.  ctx.recover_secret_key() should return an error
@@ -175,7 +175,7 @@ fn key_export_context() {
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids,
     };
-    let recovered_secret_key = ctx.recover_secret_key(serde_json::to_string(&resp).unwrap());
+    let recovered_secret_key = ctx.recover_secret_key(resp);
     assert!(recovered_secret_key.is_err());
 }
 

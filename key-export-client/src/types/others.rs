@@ -1,14 +1,24 @@
 use alloc::string::{String, ToString};
-use dfns_key_export_common::KeyExportRequest;
+use dfns_key_export_common::{KeyExportRequest, KeyExportResponse};
 
-/// Key-export request type to be returned on non-wasm32 arch.
+/// Key-export request type (sent to Dfns API) to be used on non-wasm32 arch.
 pub type Request = KeyExportRequest;
-/// Error type to be returned on non-wasm32 arch.
+/// Key-export response type (returned from Dfns API)
+/// to be used as input in `recover_secret_key()` on non-wasm32 arch.
+pub type Response = KeyExportResponse;
+/// Error type to be used on non-wasm32 arch.
 pub type Error = KeyExportError;
 
-/// Key-export request type on non-wasm32 arch is KeyExportRequest.
+/// Format a `KeyExportRequest` as type `Request`
+/// (which is `KeyExportRequest` on non-wasm32 arch).
 pub fn format_request(req: KeyExportRequest) -> Result<Request, Error> {
     Ok(req)
+}
+
+/// Parse a type `Reponse` (which is `KeyExportResponse` on non-wasm32 arch)
+/// as a `KeyExportResponse`.
+pub fn parse_response(resp: Response) -> Result<KeyExportResponse, Error> {
+    Ok(resp)
 }
 
 /// Error type on non-wasm32 arch is KeyExportError.
