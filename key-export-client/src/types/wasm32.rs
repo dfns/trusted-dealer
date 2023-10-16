@@ -1,4 +1,4 @@
-use dfns_key_export_common::KeyExportRequest;
+use dfns_key_export_common::{KeyExportRequest, KeyExportResponse};
 use wasm_bindgen::{JsError, JsValue};
 
 use crate::Context;
@@ -20,5 +20,5 @@ pub fn format_request(req: KeyExportRequest) -> Result<Request, Error> {
 /// Parse a type `Reponse` (which is `JsValue` on wasm32 arch)
 /// as a `KeyExportResponse`.
 pub fn parse_response(resp: Response) -> Result<KeyExportResponse, Error> {
-    serde_wasm_bindgen::from_value(&resp).context("cannot parse key-export response")
+    serde_wasm_bindgen::from_value(resp).context("cannot parse key-export response")
 }
