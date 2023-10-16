@@ -20,7 +20,7 @@ use wasm_bindgen::prelude::*;
 
 extern crate alloc;
 
-use alloc::{format, string::String, vec::Vec};
+use alloc::{format, vec::Vec};
 use base64::{engine::general_purpose, Engine as _};
 use rand_core::{self, RngCore};
 
@@ -102,10 +102,9 @@ impl KeyExportContext {
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = recoverSecretKey))]
-    pub fn recover_secret_key(&self, response: String) -> Result<SecretKey, types::Error> {
+    pub fn recover_secret_key(&self, response: types::Response) -> Result<SecretKey, types::Error> {
         // Parse response
-        let response: KeyExportResponse =
-            serde_json::from_str(&response).context("cannot parse key-export response")?;
+        let response: KeyExportResponse = types::parse_response(response)?;
         // Parse and validate fields
         let min_signers: u16 = response
             .min_signers
