@@ -53,7 +53,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
             rng,
             usize::from(t) - 1,
-            secret_key.clone(),
+            *secret_key,
         );
         let shares = key_shares_indexes
             .iter()
