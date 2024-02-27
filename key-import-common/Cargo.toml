@@ -21,7 +21,7 @@ hkdf = "0.12"
 sha2 = "0.10"
 
 [dev-dependencies]
-cggmp21 = { version = "0.1", features = ["spof"] }
+key-share = { version = "0.1", features = ["spof"] }
 rand_dev = "0.1"
 serde_json = "1"
 

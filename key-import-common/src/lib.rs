@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 use serde_with::{base64::Base64, serde_as};
 
-use generic_ec::{Curve, Point, Scalar, SecretScalar};
+use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 use rand_core::{CryptoRng, RngCore};
 
 /// Version number, ensures that server and client
@@ -39,7 +39,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
     n: u16,
-    secret_key: &SecretScalar<E>,
+    secret_key: &NonZero<Scalar<E>>,
 ) -> Result<Vec<KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error(()));
