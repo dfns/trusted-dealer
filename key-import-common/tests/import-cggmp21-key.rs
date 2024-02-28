@@ -1,3 +1,4 @@
+use generic_ec::Scalar;
 use key_share::Validate as _;
 
 #[test]
@@ -6,7 +7,7 @@ fn split_and_reconstruct_key() {
 
     let (t, n) = (3, 5);
     let mut rng = rand_dev::DevRng::new();
-    let secret_key = generic_ec::NonZero::<generic_ec::Scalar<E>>::random(&mut rng);
+    let secret_key = generic_ec::NonZero::<generic_ec::SecretScalar<E>>::random(&mut rng);
     let public_key = generic_ec::Point::generator() * &secret_key;
 
     let shares = dfns_key_import_common::split_secret_key(&mut rng, t, n, &secret_key).unwrap();
@@ -39,5 +40,8 @@ fn split_and_reconstruct_key() {
 
     // Reconstruct a secret key corresponding to the key shares
     let reconstructed_sk = key_share::reconstruct_secret_key(&shares).unwrap();
-    assert_eq!(secret_key.as_ref(), reconstructed_sk.as_ref());
+    assert_eq!(
+        AsRef::<Scalar<E>>::as_ref(&secret_key),
+        reconstructed_sk.as_ref()
+    );
 }

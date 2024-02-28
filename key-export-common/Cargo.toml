@@ -12,7 +12,7 @@ hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]
 rand_core = { version = "0.6", default-features = false }
 
 dfns-trusted-dealer-core = { path = "../core" }
-generic-ec = { version = "0.1", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
+generic-ec = { version = "0.1", default-features = false, features = ["serde", "curve-secp256k1"] }
 generic-ec-zkp = { version = "0.1", default-features = false, features = ["serde", "alloc"] }
 
 [dev-dependencies]

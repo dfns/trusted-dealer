@@ -39,7 +39,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
     n: u16,
-    secret_key: &NonZero<Scalar<E>>,
+    secret_key: &NonZero<SecretScalar<E>>,
 ) -> Result<Vec<KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error(()));
@@ -53,7 +53,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
             rng,
             usize::from(t) - 1,
-            *secret_key,
+            secret_key.clone(),
         );
         let shares = key_shares_indexes
             .iter()

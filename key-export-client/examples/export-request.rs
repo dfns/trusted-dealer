@@ -4,7 +4,7 @@ use dfns_trusted_dealer_core::{
     encryption,
     types::{KeyCurve, KeyProtocol},
 };
-use generic_ec::{NonZero, Point, SecretScalar};
+use generic_ec::{NonZero, Point, Scalar, SecretScalar};
 
 fn main() {
     print_export_request();
@@ -24,7 +24,7 @@ fn print_export_response() {
 
     let shares = [KeySharePlaintext {
         version: dfns_trusted_dealer_core::version::VersionGuard,
-        index: NonZero::random(&mut rng),
+        index: NonZero::<Scalar<_>>::random(&mut rng),
         secret_share: SecretScalar::<E>::random(&mut rng),
     }]
     .to_vec();

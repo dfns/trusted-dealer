@@ -41,7 +41,7 @@ impl SignersInfo {
 
 /// Secret key to be imported
 #[wasm_bindgen]
-pub struct SecretKey(generic_ec::NonZero<generic_ec::Scalar<Secp256k1>>);
+pub struct SecretKey(generic_ec::NonZero<generic_ec::SecretScalar<Secp256k1>>);
 
 #[wasm_bindgen]
 impl SecretKey {
@@ -53,7 +53,7 @@ impl SecretKey {
         let scalar =
             generic_ec::Scalar::from_be_bytes(bytes).context("couldn't parse the secret key")?;
         generic_ec::NonZero::from_scalar(scalar)
-            .map(Self)
+            .map(|s| Self(s.into_secret()))
             .ok_or_else(|| JsError::new("secret key cannot be zero"))
     }
 }
