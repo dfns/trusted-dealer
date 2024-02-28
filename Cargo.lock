@@ -228,6 +228,7 @@ dependencies = [
  "dfns-trusted-dealer-core",
  "generic-ec",
  "generic-ec-zkp",
+ "getrandom",
  "hex",
  "rand_core",
  "rand_dev",
@@ -257,6 +258,7 @@ version = "0.1.0"
 dependencies = [
  "dfns-key-import-common",
  "dfns-trusted-dealer-core",
+ "getrandom",
  "serde-wasm-bindgen 0.4.5",
  "serde_json",
  "wasm-bindgen",
@@ -444,8 +446,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be4136b2a15dd319360be1c07d9933517ccf0be8f16bf62a3bee4f0d618df427"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
