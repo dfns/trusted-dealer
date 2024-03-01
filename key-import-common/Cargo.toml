@@ -8,8 +8,8 @@ publish = false
 
 [dependencies]
 dfns-trusted-dealer-core = { path = "../core" }
-generic-ec = { version = "0.1", default-features = false, features = ["serde", "curve-secp256k1"] }
-generic-ec-zkp = { version = "0.1", default-features = false, features = ["serde", "alloc"] }
+generic-ec = { version = "0.2", default-features = false, features = ["serde", "curve-secp256k1"] }
+generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
 
 rand_core = { version = "0.6", default-features = false }
 serde = "1"

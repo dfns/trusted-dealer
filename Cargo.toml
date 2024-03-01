@@ -7,7 +7,3 @@ members = [
   "./key-export-client",
   "./core",
 ]
-
-[patch.crates-io.generic-ec]
-git = "https://github.com/dfns/generic-ec"
-branch = "m"
