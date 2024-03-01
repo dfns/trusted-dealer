@@ -14,8 +14,8 @@ fn split_and_reconstruct_key() {
 
     // Convert shares into cggmp21 shares
     let indexes = (1..=n)
-        .map(|i| generic_ec::Scalar::from(i).try_into())
-        .collect::<Result<Vec<_>, _>>()
+        .map(|i| generic_ec::NonZero::from_scalar(generic_ec::Scalar::from(i)))
+        .collect::<Option<Vec<_>>>()
         .unwrap();
     let shares = (0..)
         .zip(shares)
@@ -24,7 +24,7 @@ fn split_and_reconstruct_key() {
                 i,
                 key_info: key_share::DirtyKeyInfo {
                     curve: Default::default(),
-                    shared_public_key: public_key.into_inner(),
+                    shared_public_key: public_key,
                     public_shares: s.public_shares,
                     vss_setup: Some(key_share::VssSetup {
                         min_signers: t,

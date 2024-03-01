@@ -25,7 +25,7 @@ fn print_export_response() {
     let shares = [KeySharePlaintext {
         version: dfns_trusted_dealer_core::version::VersionGuard,
         index: NonZero::<Scalar<_>>::random(&mut rng),
-        secret_share: SecretScalar::<E>::random(&mut rng),
+        secret_share: NonZero::<SecretScalar<E>>::random(&mut rng),
     }]
     .to_vec();
 

@@ -226,8 +226,8 @@ dependencies = [
  "base64 0.21.4",
  "dfns-key-export-common",
  "dfns-trusted-dealer-core",
- "generic-ec 0.2.0",
- "generic-ec-zkp 0.2.0",
+ "generic-ec",
+ "generic-ec-zkp",
  "getrandom",
  "hex",
  "rand_core",
@@ -242,8 +242,8 @@ name = "dfns-key-export-common"
 version = "0.1.0"
 dependencies = [
  "dfns-trusted-dealer-core",
- "generic-ec 0.2.0",
- "generic-ec-zkp 0.2.0",
+ "generic-ec",
+ "generic-ec-zkp",
  "hex",
  "rand_core",
  "rand_dev",
@@ -270,8 +270,8 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "dfns-trusted-dealer-core",
- "generic-ec 0.2.0",
- "generic-ec-zkp 0.2.0",
+ "generic-ec",
+ "generic-ec-zkp",
  "hex",
  "hkdf",
  "key-share",
@@ -289,7 +289,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "base64 0.21.4",
- "generic-ec 0.2.0",
+ "generic-ec",
  "hkdf",
  "rand_core",
  "rand_dev",
@@ -383,23 +383,6 @@ dependencies = [
 
 [[package]]
 name = "generic-ec"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f20aec40cfb745f7af3d8e889bbfedbe1565cd383a645ceae86b32e8766d5060"
-dependencies = [
- "generic-ec-core",
- "hex",
- "phantom-type",
- "rand_core",
- "serde",
- "serde_with 2.3.3",
- "subtle",
- "udigest",
- "zeroize",
-]
-
-[[package]]
-name = "generic-ec"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f315ffeaae6a05691c5a27028b4ae960d3a430e406d0109ff8502e2f84ae97b"
@@ -446,25 +429,12 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-zkp"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f98645d68f62951789a4aec46ef4416878c2827b2353f5267cf96b096eae60d9"
-dependencies = [
- "generic-array",
- "generic-ec 0.1.4",
- "rand_core",
- "subtle",
- "udigest",
-]
-
-[[package]]
-name = "generic-ec-zkp"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9b631ea71fa0294e80d479c5b952e276776c9abf1b1a542b48e66b83fe1828c"
 dependencies = [
  "generic-array",
- "generic-ec 0.2.0",
+ "generic-ec",
  "rand_core",
  "serde",
  "subtle",
@@ -575,11 +545,10 @@ dependencies = [
 [[package]]
 name = "key-share"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c50b6f0686e2fe2524c66e88b9696d914ca8612cfd25c1b6e2e7049de47621fb"
+source = "git+https://github.com/dfns/cggmp21?branch=zero-sk#c16686928588267f2eca42405b0c7760326c63a8"
 dependencies = [
- "generic-ec 0.1.4",
- "generic-ec-zkp 0.1.1",
+ "generic-ec",
+ "generic-ec-zkp",
  "rand_core",
  "thiserror",
 ]

@@ -29,9 +29,9 @@ pub struct KeySharePlaintext<E: Curve> {
     /// Version of library that generated the key share
     pub version: dfns_trusted_dealer_core::version::VersionGuard<VERSION>,
     /// The secret share
-    pub secret_share: SecretScalar<E>,
+    pub secret_share: NonZero<SecretScalar<E>>,
     /// `public_shares[j]` is commitment to secret share of j-th party
-    pub public_shares: Vec<Point<E>>,
+    pub public_shares: Vec<NonZero<Point<E>>>,
 }
 
 /// Splits secret key into key shares
@@ -42,12 +42,12 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
     secret_key: &NonZero<SecretScalar<E>>,
 ) -> Result<Vec<KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
-        return Err(Error(()));
+        return Err(Reason::InvalidInput.into());
     }
     let key_shares_indexes = (1..=n)
         .map(|i| generic_ec::NonZero::from_scalar(Scalar::from(i)))
         .collect::<Option<Vec<_>>>()
-        .ok_or(Error(()))?;
+        .ok_or(Reason::ZeroPreimage)?;
 
     let secret_shares = {
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
@@ -58,15 +58,16 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
         let shares = key_shares_indexes
             .iter()
             .map(|i| f.value(i))
-            .map(|mut x| SecretScalar::new(&mut x))
-            .collect::<Vec<_>>();
+            .map(|mut x| NonZero::from_secret_scalar(SecretScalar::new(&mut x)))
+            .collect::<Option<Vec<_>>>()
+            .ok_or(Reason::ZeroShare)?;
         shares
     };
 
     let public_shares = secret_shares
         .iter()
         .map(|x| Point::generator() * x)
-        .collect::<Vec<Point<E>>>();
+        .collect::<Vec<NonZero<Point<E>>>>();
 
     Ok(secret_shares
         .into_iter()
@@ -80,11 +81,33 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
 
 /// Splitting key share failed
 #[derive(Debug)]
-pub struct Error(());
+pub struct Error(Reason);
+
+#[derive(Debug)]
+enum Reason {
+    InvalidInput,
+    ZeroPreimage,
+    ZeroShare,
+}
 
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("splitting secret key into key shares failed")
+        write!(f, "splitting secret key into key shares failed: {}", self.0)
+    }
+}
+impl core::fmt::Display for Reason {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Reason::InvalidInput => f.write_str("invalid inputs `t` and `n`"),
+            Reason::ZeroPreimage => f.write_str("zero share preimage"),
+            Reason::ZeroShare => f.write_str("generated zero share"),
+        }
+    }
+}
+
+impl From<Reason> for Error {
+    fn from(err: Reason) -> Self {
+        Self(err)
     }
 }
 

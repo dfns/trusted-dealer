@@ -28,8 +28,9 @@ fn get_random_keys_and_shares<E: Curve>(
         let secret_shares = key_shares_indexes
             .iter()
             .map(|i| f.value(i))
-            .map(|mut x| SecretScalar::new(&mut x))
-            .collect::<Vec<_>>();
+            .map(|mut x| NonZero::from_secret_scalar(SecretScalar::new(&mut x)))
+            .collect::<Option<Vec<_>>>()
+            .unwrap();
         secret_shares
     };
 
