@@ -545,7 +545,7 @@ dependencies = [
 [[package]]
 name = "key-share"
 version = "0.1.0"
-source = "git+https://github.com/dfns/cggmp21?branch=zero-sk#c16686928588267f2eca42405b0c7760326c63a8"
+source = "git+https://github.com/dfns/cggmp21?branch=m#c4e218d7cf6e7378843c2990b878156c7f903d0b"
 dependencies = [
  "generic-ec",
  "generic-ec-zkp",
