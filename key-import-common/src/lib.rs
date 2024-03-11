@@ -55,7 +55,7 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
             usize::from(t) - 1,
             secret_key.clone(),
         );
-        
+
         key_shares_indexes
             .iter()
             .map(|i| f.value(i))
