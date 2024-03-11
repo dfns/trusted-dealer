@@ -55,13 +55,13 @@ pub fn split_secret_key<E: Curve, R: RngCore + CryptoRng>(
             usize::from(t) - 1,
             secret_key.clone(),
         );
-        let shares = key_shares_indexes
+        
+        key_shares_indexes
             .iter()
             .map(|i| f.value(i))
             .map(|mut x| NonZero::from_secret_scalar(SecretScalar::new(&mut x)))
             .collect::<Option<Vec<_>>>()
-            .ok_or(Reason::ZeroShare)?;
-        shares
+            .ok_or(Reason::ZeroShare)?
     };
 
     let public_shares = secret_shares
