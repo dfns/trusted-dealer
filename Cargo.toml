@@ -7,3 +7,7 @@ members = [
   "./key-export-client",
   "./core",
 ]
+
+[patch.crates-io.key-share]
+git = "https://github.com/dfns/cggmp21"
+branch = "m"

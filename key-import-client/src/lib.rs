@@ -41,7 +41,7 @@ impl SignersInfo {
 
 /// Secret key to be imported
 #[wasm_bindgen]
-pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
+pub struct SecretKey(generic_ec::NonZero<generic_ec::SecretScalar<Secp256k1>>);
 
 #[wasm_bindgen]
 impl SecretKey {
@@ -50,9 +50,11 @@ impl SecretKey {
     /// Throws `Error` if secret key is invalid
     #[wasm_bindgen(js_name = fromBytesBE)]
     pub fn from_bytes_be(bytes: &[u8]) -> Result<SecretKey, JsError> {
-        let scalar = generic_ec::SecretScalar::from_be_bytes(bytes)
-            .context("couldn't parse the secret key")?;
-        Ok(Self(scalar))
+        let scalar =
+            generic_ec::Scalar::from_be_bytes(bytes).context("couldn't parse the secret key")?;
+        generic_ec::NonZero::from_scalar(scalar)
+            .map(|s| Self(s.into_secret()))
+            .ok_or_else(|| JsError::new("secret key cannot be zero"))
     }
 }
 

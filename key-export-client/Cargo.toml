@@ -10,8 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 dfns-trusted-dealer-core = { path = "../core" }
 dfns-key-export-common = { path = "../key-export-common" }
-generic-ec = { version = "0.1", default-features = false, features = ["serde", "curve-secp256k1", "wasm"] }
-generic-ec-zkp = { version = "0.1", default-features = false, features = ["serde", "alloc"] }
+generic-ec = { version = "0.2", default-features = false, features = ["serde", "curve-secp256k1"] }
+generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
 
 serde_json = "1"
 rand_core = { version = "0.6", default-features = false }
@@ -20,6 +20,7 @@ base64 = "0.21"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"]}

@@ -28,7 +28,7 @@ pub struct KeySharePlaintext<E: Curve> {
     /// The index (evaluation point)
     pub index: NonZero<Scalar<E>>,
     /// The secret share
-    pub secret_share: SecretScalar<E>,
+    pub secret_share: NonZero<SecretScalar<E>>,
 }
 
 /// Key export request that's intended to be sent from the client
@@ -119,7 +119,7 @@ mod tests {
         let mut rng = rand_dev::DevRng::new();
         let key_share_plaintext = crate::KeySharePlaintext {
             version: dfns_trusted_dealer_core::version::VersionGuard,
-            secret_share: generic_ec::SecretScalar::<E>::random(&mut rng),
+            secret_share: generic_ec::NonZero::<generic_ec::SecretScalar<E>>::random(&mut rng),
             index: generic_ec::NonZero::<generic_ec::Scalar<E>>::random(&mut rng),
         };
         let key_share_plaintext = serde_json::to_string(&key_share_plaintext).unwrap();
