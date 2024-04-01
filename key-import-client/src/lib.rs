@@ -11,13 +11,13 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use common::KeyImportRequest;
+use common::{rand_core::CryptoRng, KeyImportRequest};
 use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
 use wasm_bindgen::prelude::*;
 
 use dfns_key_import_common::{
     self as common,
-    generic_ec::{self, curves::Secp256k1},
+    generic_ec::{self, curves},
     rand_core::{self, RngCore},
 };
 
@@ -41,7 +41,9 @@ impl SignersInfo {
 
 /// Secret key to be imported
 #[wasm_bindgen]
-pub struct SecretKey(generic_ec::NonZero<generic_ec::SecretScalar<Secp256k1>>);
+pub struct SecretKey {
+    be_bytes: zeroize::Zeroizing<Vec<u8>>,
+}
 
 #[wasm_bindgen]
 impl SecretKey {
@@ -49,12 +51,10 @@ impl SecretKey {
     ///
     /// Throws `Error` if secret key is invalid
     #[wasm_bindgen(js_name = fromBytesBE)]
-    pub fn from_bytes_be(bytes: &[u8]) -> Result<SecretKey, JsError> {
-        let scalar =
-            generic_ec::Scalar::from_be_bytes(bytes).context("couldn't parse the secret key")?;
-        generic_ec::NonZero::from_scalar(scalar)
-            .map(|s| Self(s.into_secret()))
-            .ok_or_else(|| JsError::new("secret key cannot be zero"))
+    pub fn from_bytes_be(bytes: Vec<u8>) -> Result<SecretKey, JsError> {
+        Ok(Self {
+            be_bytes: bytes.into(),
+        })
     }
 }
 
@@ -103,7 +103,33 @@ pub fn build_key_import_request(
     };
 
     match (protocol, curve) {
-        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {}
+        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
+            build_key_import_request_for_curve::<curves::Secp256k1>(
+                &mut rng,
+                secret_key,
+                signers_info,
+                min_signers,
+                n,
+            )
+        }
+        (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
+            build_key_import_request_for_curve::<curves::Stark>(
+                &mut rng,
+                secret_key,
+                signers_info,
+                min_signers,
+                n,
+            )
+        }
+        (KeyProtocol::Frost, KeyCurve::Ed25519) => {
+            build_key_import_request_for_curve::<curves::Ed25519>(
+                &mut rng,
+                secret_key,
+                signers_info,
+                min_signers,
+                n,
+            )
+        }
         (p, c) => {
             return Err(JsError::new(&alloc::format!(
                 "protocol {:?} using curve {:?} is not supported for key import",
@@ -112,9 +138,22 @@ pub fn build_key_import_request(
             )));
         }
     }
+}
+
+fn build_key_import_request_for_curve<E: generic_ec::Curve>(
+    rng: &mut (impl RngCore + CryptoRng),
+    secret_key: &SecretKey,
+    signers_info: &SignersInfo,
+    min_signers: u16,
+    n: u16,
+) -> Result<JsValue, JsError> {
+    let secret_key = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_key.be_bytes)
+        .context("malformed secret key")?;
+    let secret_key =
+        generic_ec::NonZero::from_secret_scalar(secret_key).context("secret key is zero")?;
 
     // Split the secret key into the shares
-    let key_shares = common::split_secret_key(&mut rng, min_signers, n, &secret_key.0)
+    let key_shares = common::split_secret_key(rng, min_signers, n, &secret_key)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share
@@ -131,9 +170,7 @@ pub fn build_key_import_request(
         .iter()
         .zip(key_shares)
         .map(|(recipient, mut key_share)| {
-            recipient
-                .encryption_key
-                .encrypt(&mut rng, &[], &mut key_share)?;
+            recipient.encryption_key.encrypt(rng, &[], &mut key_share)?;
             Ok(common::KeyShareCiphertext {
                 encrypted_key_share: key_share,
                 signer_id: recipient.signer_id.clone(),
@@ -163,5 +200,11 @@ where
 {
     fn context(self, ctx: &str) -> Result<T, JsError> {
         self.map_err(|e| JsError::new(&alloc::format!("{ctx}: {e}")))
+    }
+}
+
+impl<T> Context<T, core::convert::Infallible> for Option<T> {
+    fn context(self, ctx: &str) -> Result<T, JsError> {
+        self.ok_or_else(|| JsError::new(ctx))
     }
 }
