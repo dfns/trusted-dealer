@@ -131,11 +131,11 @@ pub fn build_key_import_request(
             )
         }
         (p, c) => {
-            return Err(JsError::new(&alloc::format!(
+            Err(JsError::new(&alloc::format!(
                 "protocol {:?} using curve {:?} is not supported for key import",
                 &p,
                 &c
-            )));
+            )))
         }
     }
 }
