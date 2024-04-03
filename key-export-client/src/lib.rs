@@ -32,7 +32,7 @@ use dfns_trusted_dealer_core::{
     encryption::DecryptionKey,
     types::{KeyCurve, KeyProtocol},
 };
-use generic_ec::{curves::Secp256k1, Curve, NonZero, Point, Scalar, SecretScalar};
+use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
 
 const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     protocol: KeyProtocol::Cggmp21,
@@ -41,14 +41,17 @@ const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
 
 /// Secret key to be exported
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SecretKey(generic_ec::SecretScalar<Secp256k1>);
+pub struct SecretKey {
+    /// Secret key serialized as bytes in big-endian
+    be_bytes: zeroize::Zeroizing<Vec<u8>>,
+}
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SecretKey {
     /// Serializes the secret key in big-endian format.
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toBytesBE))]
     pub fn to_bytes_be(&self) -> Vec<u8> {
-        self.0.as_ref().to_be_bytes().to_vec()
+        (*self.be_bytes).clone()
     }
 }
 
@@ -128,10 +131,36 @@ impl KeyExportContext {
         // perform the interpolation, and return the private key.
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
-                let key_shares = parse_key_shares::<Secp256k1>(&decrypted_key_shares_and_ids)?;
+                let key_shares =
+                    parse_key_shares::<curves::Secp256k1>(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_key::<Secp256k1>(&key_shares, &public_key)
+                interpolate_secret_key::<curves::Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
+                    .as_ref()
+                    .to_be_bytes()
+                    .to_vec()
+                    .into()
+            }
+            (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
+                let key_shares = parse_key_shares::<curves::Stark>(&decrypted_key_shares_and_ids)?;
+                let public_key = parse_public_key(&response.public_key)?;
+                interpolate_secret_key::<curves::Stark>(&key_shares, &public_key)
+                    .context("interpolation failed")?
+                    .as_ref()
+                    .to_be_bytes()
+                    .to_vec()
+                    .into()
+            }
+            (KeyProtocol::Frost, KeyCurve::Ed25519) => {
+                let key_shares =
+                    parse_key_shares::<curves::Ed25519>(&decrypted_key_shares_and_ids)?;
+                let public_key = parse_public_key(&response.public_key)?;
+                interpolate_secret_key::<curves::Ed25519>(&key_shares, &public_key)
+                    .context("interpolation failed")?
+                    .as_ref()
+                    .to_be_bytes()
+                    .to_vec()
+                    .into()
             }
             (protocol, curve) => {
                 return Err(new_error(&alloc::format!(
@@ -141,7 +170,9 @@ impl KeyExportContext {
                 )));
             }
         };
-        Ok(SecretKey(secret_key))
+        Ok(SecretKey {
+            be_bytes: secret_key,
+        })
     }
 }
 

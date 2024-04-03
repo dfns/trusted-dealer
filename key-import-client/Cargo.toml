@@ -15,3 +15,5 @@ getrandom = { version = "0.2", features = ["js"] }
 
 dfns-key-import-common = { path = "../key-import-common" }
 dfns-trusted-dealer-core = { path = "../core", features = [ "wasm" ]}
+
+zeroize = { version = "1.7", default-features = false, features = ["alloc"]}
