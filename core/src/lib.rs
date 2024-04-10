@@ -1,10 +1,18 @@
 //! Common functionality for key import and export.
 
 #![forbid(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 
-pub mod encryption;
-pub mod types;
-pub mod version;
+#[cfg(feature = "std")]
+extern crate std;
 
 extern crate alloc;
+
+#[cfg(target_arch = "wasm32")]
+pub use wasm_bindgen;
+
+pub mod encryption;
+pub mod error;
+pub mod json_value;
+pub mod types;
+pub mod version;

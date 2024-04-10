@@ -6,17 +6,14 @@
 //! key of a specified wallet.
 
 #![forbid(missing_docs)]
+#![cfg_attr(not(test), forbid(unused_crate_dependencies))]
 #![no_std]
 
-// Because JsValue is not suported in non-wasm32 architectures,
-// this code is compiled to return a different error type and
-// request type in wasm32 and non-wasm32 architectures.
-#[cfg_attr(target_arch = "wasm32", path = "types/wasm32.rs")]
-#[cfg_attr(not(target_arch = "wasm32"), path = "types/others.rs")]
-mod types;
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+mod _unused_deps {
+    // We don't use getrandom directly, but we need to enable "js" feature
+    #[cfg(target_arch = "wasm32")]
+    use getrandom as _;
+}
 
 extern crate alloc;
 
@@ -30,9 +27,14 @@ use dfns_key_export_common::{
 };
 use dfns_trusted_dealer_core::{
     encryption::DecryptionKey,
+    error::{Context, Error},
+    json_value::JsonValue,
     types::{KeyCurve, KeyProtocol},
 };
 use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
+
+#[cfg(target_arch = "wasm32")]
+use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};
 
 const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     protocol: KeyProtocol::Cggmp21,
@@ -74,7 +76,7 @@ impl KeyExportContext {
     /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
     ///
     /// Throws `Error` in case of failure.
-    pub fn new() -> Result<KeyExportContext, types::Error> {
+    pub fn new() -> Result<KeyExportContext, Error> {
         let mut rng = rand_core::OsRng;
         // Sample random 10 bytes to see that CSPRNG is available
         let mut sample = [0u8; 10];
@@ -91,12 +93,12 @@ impl KeyExportContext {
     ///
     /// Throws `Error` in case of failure.
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyExportRequest))]
-    pub fn build_key_export_request(&self) -> Result<types::Request, types::Error> {
+    pub fn build_key_export_request(&self) -> Result<JsonValue, Error> {
         let req = KeyExportRequest {
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
             encryption_key: self.decryption_key.encryption_key(),
         };
-        types::format_request(req)
+        JsonValue::new(req).context("serialize key export request")
     }
 
     /// Parses the response from Dfns API and recovers the private key.
@@ -105,9 +107,9 @@ impl KeyExportContext {
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = recoverSecretKey))]
-    pub fn recover_secret_key(&self, response: types::Response) -> Result<SecretKey, types::Error> {
+    pub fn recover_secret_key(&self, response: JsonValue) -> Result<SecretKey, Error> {
         // Parse response
-        let response: KeyExportResponse = types::parse_response(response)?;
+        let response: KeyExportResponse = response.deserialize().context("deserialize response")?;
         // Parse and validate fields
         let min_signers: u16 = response
             .min_signers
@@ -119,7 +121,7 @@ impl KeyExportContext {
             .try_into()
             .context("length of key_holders overflows u16")?;
         if !(2 <= min_signers && min_signers <= n) {
-            return Err(new_error(
+            return Err(Error::new(
                 "invalid threshold: min_signers must be at least 2 and at most the number of the given shares",
             ));
         };
@@ -163,7 +165,7 @@ impl KeyExportContext {
                     .into()
             }
             (protocol, curve) => {
-                return Err(new_error(&alloc::format!(
+                return Err(Error::new(&alloc::format!(
                     "protocol {:?} using curve {:?} is not supported for key export",
                     &protocol,
                     &curve
@@ -184,7 +186,7 @@ impl KeyExportContext {
 pub fn decrypt_key_shares(
     decryption_key: &DecryptionKey,
     encrypted_shares_and_ids: &[EncryptedShareAndIdentity],
-) -> Result<Vec<DecryptedShareAndIdentity>, types::Error> {
+) -> Result<Vec<DecryptedShareAndIdentity>, Error> {
     let decrypted_key_shares = encrypted_shares_and_ids
         .iter()
         .map(|share| {
@@ -198,7 +200,7 @@ pub fn decrypt_key_shares(
                 decrypted_key_share: buffer,
             })
         })
-        .collect::<Result<Vec<_>, types::Error>>()?;
+        .collect::<Result<Vec<_>, Error>>()?;
     Ok(decrypted_key_shares)
 }
 
@@ -209,7 +211,7 @@ pub fn decrypt_key_shares(
 /// containg the id of the signer with the first invalid share found.
 pub fn parse_key_shares<E: Curve>(
     key_shares_and_ids: &[DecryptedShareAndIdentity],
-) -> Result<Vec<KeySharePlaintext<E>>, types::Error> {
+) -> Result<Vec<KeySharePlaintext<E>>, Error> {
     let key_shares_plaintext = key_shares_and_ids
         .iter()
         .map(|share| {
@@ -225,7 +227,7 @@ pub fn parse_key_shares<E: Curve>(
 }
 
 /// Parse the public key
-fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, types::Error> {
+fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, Error> {
     Point::<E>::from_bytes(public_key_bytes).context("cannot parse the public key")
 }
 
@@ -294,21 +296,4 @@ impl core::fmt::Display for InterpolateKeyError {
         };
         f.write_str(msg)
     }
-}
-
-trait Context<T, E> {
-    fn context(self, ctx: &str) -> Result<T, types::Error>;
-}
-
-impl<T, E> Context<T, E> for Result<T, E>
-where
-    E: core::fmt::Display,
-{
-    fn context(self, ctx: &str) -> Result<T, types::Error> {
-        self.map_err(|e| types::Error::new(&alloc::format!("{ctx}: {e}")))
-    }
-}
-
-fn new_error(ctx: &str) -> types::Error {
-    types::Error::new(ctx)
 }

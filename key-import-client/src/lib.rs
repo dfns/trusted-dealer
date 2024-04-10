@@ -4,16 +4,28 @@
 //! at customer side, encrypt them and build a key import request that needs to be sent
 //! to Dfns API.
 
-#![forbid(missing_docs)]
+#![forbid(missing_docs, unused_crate_dependencies)]
 #![no_std]
+
+mod _unused_deps {
+    // We don't use getrandom directly, but we need to enable "js" feature
+    #[cfg(target_arch = "wasm32")]
+    use getrandom as _;
+}
 
 extern crate alloc;
 
 use alloc::vec::Vec;
 
 use common::{rand_core::CryptoRng, KeyImportRequest};
-use dfns_trusted_dealer_core::types::{KeyCurve, KeyProtocol};
-use wasm_bindgen::prelude::*;
+use dfns_trusted_dealer_core::{
+    error::{Context, Error},
+    json_value::JsonValue,
+    types::{KeyCurve, KeyProtocol},
+};
+
+#[cfg(target_arch = "wasm32")]
+use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};
 
 use dfns_key_import_common::{
     self as common,
@@ -25,33 +37,33 @@ use dfns_key_import_common::{
 ///
 /// Contains information necessary to establish a secure communication channel with
 /// the signers who're going to host the imported key
-#[wasm_bindgen]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct SignersInfo(common::SignersInfo);
 
-#[wasm_bindgen]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SignersInfo {
     /// Parses signers info from response obtained from Dfns API
     ///
     /// Throws `Error` if response is malformed
-    pub fn new(resp: JsValue) -> Result<SignersInfo, JsError> {
-        let info = serde_wasm_bindgen::from_value(resp).context("couldn't parse the response")?;
+    pub fn new(resp: JsonValue) -> Result<SignersInfo, Error> {
+        let info = resp.deserialize().context("couldn't parse the response")?;
         Ok(Self(info))
     }
 }
 
 /// Secret key to be imported
-#[wasm_bindgen]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct SecretKey {
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SecretKey {
     /// Parses the secret key in big-endian format (the most widely-used format)
     ///
     /// Throws `Error` if secret key is invalid
-    #[wasm_bindgen(js_name = fromBytesBE)]
-    pub fn from_bytes_be(bytes: Vec<u8>) -> Result<SecretKey, JsError> {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromBytesBE))]
+    pub fn from_bytes_be(bytes: Vec<u8>) -> Result<SecretKey, Error> {
         Ok(Self {
             be_bytes: bytes.into(),
         })
@@ -74,20 +86,20 @@ impl SecretKey {
 /// [Node JS crypto module]: https://nodejs.org/api/crypto.html
 ///
 /// Throws `Error` in case of failure
-#[wasm_bindgen(js_name = buildKeyImportRequest)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyImportRequest))]
 pub fn build_key_import_request(
     secret_key: &SecretKey,
     signers_info: &SignersInfo,
     min_signers: u16,
     protocol: KeyProtocol,
     curve: KeyCurve,
-) -> Result<JsValue, JsError> {
+) -> Result<JsonValue, Error> {
     let mut rng = rand_core::OsRng;
 
     // Sample random 10 bytes to see that CSPRNG is available
     let mut sample = [0u8; 10];
     rng.try_fill_bytes(&mut sample)
-        .map_err(|_| JsError::new("cryptographic randomness generator is not available"))?;
+        .map_err(|_| Error::new("cryptographic randomness generator is not available"))?;
 
     let n: u16 = signers_info
         .0
@@ -97,7 +109,7 @@ pub fn build_key_import_request(
         .context("length of signers_info overflows u16")?;
 
     if !(2 <= min_signers && min_signers <= n) {
-        return Err(JsError::new(
+        return Err(Error::new(
             "invalid threshold: min_signers must be at least 2 and at most the length of signers_info",
         ));
     };
@@ -130,7 +142,7 @@ pub fn build_key_import_request(
                 n,
             )
         }
-        (p, c) => Err(JsError::new(&alloc::format!(
+        (p, c) => Err(Error::new(&alloc::format!(
             "protocol {:?} using curve {:?} is not supported for key import",
             &p,
             &c
@@ -144,7 +156,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     signers_info: &SignersInfo,
     min_signers: u16,
     n: u16,
-) -> Result<JsValue, JsError> {
+) -> Result<JsonValue, Error> {
     let secret_key = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_key.be_bytes)
         .context("malformed secret key")?;
     let secret_key =
@@ -159,7 +171,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         .into_iter()
         .map(|k| serde_json::to_vec(&k))
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|_| JsError::new("couldn't serialize a key share"))?;
+        .map_err(|_| Error::new("couldn't serialize a key share"))?;
 
     // Encrypt each share with corresponding signer encryption key
     let encrypted_key_shares = signers_info
@@ -175,7 +187,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
             })
         })
         .collect::<Result<Vec<_>, dfns_trusted_dealer_core::encryption::Error>>()
-        .map_err(|_| JsError::new("couldn't encrypt a key share"))?;
+        .map_err(|_| Error::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it
     let req = KeyImportRequest {
@@ -185,24 +197,5 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         encrypted_key_shares,
     };
 
-    serde_wasm_bindgen::to_value(&req).context("cannot serialize key-import request")
-}
-
-trait Context<T, E> {
-    fn context(self, ctx: &str) -> Result<T, JsError>;
-}
-
-impl<T, E> Context<T, E> for Result<T, E>
-where
-    E: core::fmt::Display,
-{
-    fn context(self, ctx: &str) -> Result<T, JsError> {
-        self.map_err(|e| JsError::new(&alloc::format!("{ctx}: {e}")))
-    }
-}
-
-impl<T> Context<T, core::convert::Infallible> for Option<T> {
-    fn context(self, ctx: &str) -> Result<T, JsError> {
-        self.ok_or_else(|| JsError::new(ctx))
-    }
+    JsonValue::new(req).context("cannot serialize key-import request")
 }

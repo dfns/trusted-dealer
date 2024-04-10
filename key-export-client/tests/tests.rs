@@ -1,7 +1,10 @@
 use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError, KeyExportContext};
-use dfns_key_export_common::{EncryptedShareAndIdentity, KeyExportResponse, KeySharePlaintext};
+use dfns_key_export_common::{
+    EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse, KeySharePlaintext,
+};
 use dfns_trusted_dealer_core::{
     encryption,
+    json_value::JsonValue,
     types::{KeyCurve, KeyProtocol},
 };
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
@@ -125,6 +128,7 @@ fn key_export_context() {
     // create a new KeyExportContext and a KeyExportRequest
     let ctx = KeyExportContext::new().map_err(|_| {}).unwrap();
     let req = ctx.build_key_export_request().map_err(|_| {}).unwrap();
+    let req: KeyExportRequest = req.deserialize().unwrap();
 
     // Create a KeyExportResponse
     let enc_key = req.encryption_key;
@@ -146,6 +150,7 @@ fn key_export_context() {
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids.clone(),
     };
+    let resp = JsonValue::new(resp).unwrap();
 
     // Call ctx.recover_secret_key(). Should recover the secret key.
     let recovered_secret_key = ctx
@@ -164,6 +169,7 @@ fn key_export_context() {
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids.clone(),
     };
+    let resp = JsonValue::new(resp).unwrap();
     let recovered_secret_key = ctx.recover_secret_key(resp);
     assert!(recovered_secret_key.is_err());
 
@@ -176,6 +182,7 @@ fn key_export_context() {
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids,
     };
+    let resp = JsonValue::new(resp).unwrap();
     let recovered_secret_key = ctx.recover_secret_key(resp);
     assert!(recovered_secret_key.is_err());
 }
