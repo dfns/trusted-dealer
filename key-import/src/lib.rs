@@ -17,20 +17,17 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use dfns_trusted_dealer_core::{
+use common::{
     error::{Context, Error},
-    json_value::JsonValue,
-};
-
-pub use dfns_trusted_dealer_core::types::{import, KeyCurve, KeyProtocol};
-
-#[cfg(target_arch = "wasm32")]
-use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};
-
-use dfns_trusted_dealer_core::{
     generic_ec::{self, curves},
+    json_value::JsonValue,
     rand_core::{self, CryptoRng, RngCore},
 };
+
+#[cfg(target_arch = "wasm32")]
+use common::wasm_bindgen::{self, prelude::wasm_bindgen};
+
+pub use common::types::{import, KeyCurve, KeyProtocol};
 
 /// Signers info
 ///
@@ -185,7 +182,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
                 signer_id: recipient.signer_id.clone(),
             })
         })
-        .collect::<Result<Vec<_>, dfns_trusted_dealer_core::encryption::Error>>()
+        .collect::<Result<Vec<_>, common::encryption::Error>>()
         .map_err(|_| Error::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it

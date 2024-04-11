@@ -8,7 +8,7 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dfns-trusted-dealer-core = { path = "../core", features = ["export"] }
+common = { package = "dfns-trusted-dealer-common", path = "../common", features = ["export"] }
 generic-ec = { version = "0.2", default-features = false, features = ["serde", "curve-secp256k1", "curve-stark", "curve-ed25519"] }
 generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
 zeroize = { version = "1.7", default-features = false, features = ["alloc"]}

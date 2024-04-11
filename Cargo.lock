@@ -270,7 +270,7 @@ name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.4",
- "dfns-trusted-dealer-core",
+ "dfns-trusted-dealer-common",
  "generic-ec",
  "generic-ec-zkp",
  "getrandom",
@@ -284,7 +284,7 @@ dependencies = [
 name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
- "dfns-trusted-dealer-core",
+ "dfns-trusted-dealer-common",
  "generic-ec-zkp",
  "getrandom",
  "serde_json",
@@ -292,7 +292,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dfns-trusted-dealer-core"
+name = "dfns-trusted-dealer-common"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
@@ -1048,8 +1048,3 @@ dependencies = [
  "quote",
  "syn 2.0.26",
 ]
-
-[[patch.unused]]
-name = "key-share"
-version = "0.1.0"
-source = "git+https://github.com/dfns/cggmp21?branch=m#c4e218d7cf6e7378843c2990b878156c7f903d0b"

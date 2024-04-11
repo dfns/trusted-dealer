@@ -1,9 +1,9 @@
-use dfns_key_export_client::{
-    EncryptedShareAndIdentity, KeyExportContext, KeyExportResponse, KeySharePlaintext,
-};
-use dfns_trusted_dealer_core::{
+use common::{
     encryption,
     types::{KeyCurve, KeyProtocol},
+};
+use dfns_key_export::{
+    EncryptedShareAndIdentity, KeyExportContext, KeyExportResponse, KeySharePlaintext,
 };
 use generic_ec::{NonZero, Point, Scalar, SecretScalar};
 
@@ -24,7 +24,7 @@ fn print_export_response() {
     let decryption_key = encryption::DecryptionKey::generate(&mut rng);
 
     let shares = [KeySharePlaintext {
-        version: dfns_trusted_dealer_core::version::VersionGuard,
+        version: common::version::VersionGuard,
         index: NonZero::<Scalar<_>>::random(&mut rng),
         secret_share: NonZero::<SecretScalar<E>>::random(&mut rng),
     }]

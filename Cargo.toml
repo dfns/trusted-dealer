@@ -1,11 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-  "./key-import-client",
-  "./key-export-client",
-  "./core",
+  "./key-import",
+  "./key-export",
+  "./common",
 ]
-
-[patch.crates-io.key-share]
-git = "https://github.com/dfns/cggmp21"
-branch = "m"

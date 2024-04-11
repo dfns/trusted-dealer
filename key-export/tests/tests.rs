@@ -1,11 +1,11 @@
-use dfns_key_export_client::{
-    interpolate_secret_key, EncryptedShareAndIdentity, InterpolateKeyError, KeyExportContext,
-    KeyExportRequest, KeyExportResponse, KeySharePlaintext,
-};
-use dfns_trusted_dealer_core::{
+use common::{
     encryption,
     json_value::JsonValue,
     types::{KeyCurve, KeyProtocol},
+};
+use dfns_key_export::{
+    interpolate_secret_key, EncryptedShareAndIdentity, InterpolateKeyError, KeyExportContext,
+    KeyExportRequest, KeyExportResponse, KeySharePlaintext,
 };
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 
@@ -42,7 +42,7 @@ fn get_random_keys_and_shares<E: Curve>(
         .map(|(i, s)| KeySharePlaintext::<E> {
             index: NonZero::from_scalar(Scalar::from(i)).unwrap(),
             secret_share: s,
-            version: dfns_trusted_dealer_core::version::VersionGuard,
+            version: common::version::VersionGuard,
         })
         .collect::<Vec<KeySharePlaintext<E>>>();
 
@@ -217,13 +217,11 @@ fn decrypt_invalid_shares() {
 
     // Decrypt them and parse them. This should succeed
     let decrypted_key_shares_and_ids =
-        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids)
-            .unwrap();
-    let _ = dfns_key_export_client::parse_key_shares::<E>(&decrypted_key_shares_and_ids).unwrap();
+        dfns_key_export::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids).unwrap();
+    let _ = dfns_key_export::parse_key_shares::<E>(&decrypted_key_shares_and_ids).unwrap();
 
     // Now try to decrypt them with a diffent decryption key. It should return an error.
     let decryption_key = encryption::DecryptionKey::generate(&mut rng);
-    let res =
-        dfns_key_export_client::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids);
+    let res = dfns_key_export::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids);
     assert!(res.is_err());
 }

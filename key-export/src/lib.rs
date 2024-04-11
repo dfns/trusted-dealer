@@ -21,7 +21,7 @@ use alloc::{format, vec::Vec};
 use base64::{engine::general_purpose, Engine as _};
 use rand_core::{self, RngCore};
 
-use dfns_trusted_dealer_core::{
+use common::{
     encryption::DecryptionKey,
     error::{Context, Error},
     json_value::JsonValue,
@@ -29,13 +29,13 @@ use dfns_trusted_dealer_core::{
 };
 use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
 
-pub use dfns_trusted_dealer_core::types::export::{
+pub use common::types::export::{
     DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse,
     KeySharePlaintext, SupportedScheme,
 };
 
 #[cfg(target_arch = "wasm32")]
-use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};
+use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
 const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
     protocol: KeyProtocol::Cggmp21,
