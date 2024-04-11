@@ -4,7 +4,7 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 /// The protocol for which a key can be used.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub enum KeyProtocol {
@@ -19,7 +19,7 @@ pub enum KeyProtocol {
 }
 
 /// The curve for which a key can be used
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub enum KeyCurve {
@@ -180,7 +180,7 @@ pub mod export {
     }
 
     /// Key export response, sent from Dfns API to the WASM module.
-    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct KeyExportResponse {
         /// The threshold of the specified wallet.

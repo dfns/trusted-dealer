@@ -37,10 +37,20 @@ pub use common::types::export::{
 #[cfg(target_arch = "wasm32")]
 use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-const SUPPORTED_SCHEMES: [SupportedScheme; 1] = [SupportedScheme {
-    protocol: KeyProtocol::Cggmp21,
-    curve: KeyCurve::Secp256k1,
-}];
+const SUPPORTED_SCHEMES: [SupportedScheme; 3] = [
+    SupportedScheme {
+        protocol: KeyProtocol::Cggmp21,
+        curve: KeyCurve::Secp256k1,
+    },
+    SupportedScheme {
+        protocol: KeyProtocol::Cggmp21,
+        curve: KeyCurve::Stark,
+    },
+    SupportedScheme {
+        protocol: KeyProtocol::Frost,
+        curve: KeyCurve::Ed25519,
+    },
+];
 
 /// Secret key to be exported
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -134,8 +144,7 @@ impl KeyExportContext {
         // perform the interpolation, and return the private key.
         let secret_key = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
-                let key_shares =
-                    parse_key_shares::<curves::Secp256k1>(&decrypted_key_shares_and_ids)?;
+                let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
                 interpolate_secret_key::<curves::Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
@@ -145,7 +154,7 @@ impl KeyExportContext {
                     .into()
             }
             (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
-                let key_shares = parse_key_shares::<curves::Stark>(&decrypted_key_shares_and_ids)?;
+                let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
                 interpolate_secret_key::<curves::Stark>(&key_shares, &public_key)
                     .context("interpolation failed")?
@@ -155,8 +164,7 @@ impl KeyExportContext {
                     .into()
             }
             (KeyProtocol::Frost, KeyCurve::Ed25519) => {
-                let key_shares =
-                    parse_key_shares::<curves::Ed25519>(&decrypted_key_shares_and_ids)?;
+                let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
                 interpolate_secret_key::<curves::Ed25519>(&key_shares, &public_key)
                     .context("interpolation failed")?
@@ -184,7 +192,7 @@ impl KeyExportContext {
 /// If all ciphertexts are successfully decrypted, it returns
 /// a vector of `DecryptedShareAndIdentity`, and an error otherwise,
 /// containg the id of the signer with the first invalid share found.
-pub fn decrypt_key_shares(
+fn decrypt_key_shares(
     decryption_key: &DecryptionKey,
     encrypted_shares_and_ids: &[EncryptedShareAndIdentity],
 ) -> Result<Vec<DecryptedShareAndIdentity>, Error> {
@@ -210,7 +218,7 @@ pub fn decrypt_key_shares(
 /// If all shares are successfully parsed, it returns
 /// a vector of `KeySharePlaintext<E>`, and an error otherwise,
 /// containg the id of the signer with the first invalid share found.
-pub fn parse_key_shares<E: Curve>(
+fn parse_key_shares<E: Curve>(
     key_shares_and_ids: &[DecryptedShareAndIdentity],
 ) -> Result<Vec<KeySharePlaintext<E>>, Error> {
     let key_shares_plaintext = key_shares_and_ids
@@ -236,7 +244,7 @@ fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, Er
 ///
 /// In the end it verifies the computed key against the provided
 /// public key and returns an error if it doesn't match.
-pub fn interpolate_secret_key<E: Curve>(
+fn interpolate_secret_key<E: Curve>(
     key_shares: &[KeySharePlaintext<E>],
     public_key: &Point<E>,
 ) -> Result<SecretScalar<E>, InterpolateKeyError> {
@@ -275,11 +283,9 @@ pub fn interpolate_secret_key<E: Curve>(
 
 /// Structure to describe errors in interpolate_secret_key()
 #[derive(Debug)]
-pub enum InterpolateKeyError {
+enum InterpolateKeyError {
     /// Input to interpolate_secret_key() contains not enough shares
     NoShares,
-    /// Internal error. Largange coefficient for zero index
-    ZeroIndex,
     /// Internal error. Malformed indexes at secret reconstruction
     MalformedIndexes,
     /// The interpolated secret key cannot be verified against the provided public key
@@ -291,10 +297,138 @@ impl core::fmt::Display for InterpolateKeyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let msg = match self {
             InterpolateKeyError::NoShares => "not shares given as input to the interpolation algorithm",
-            InterpolateKeyError::ZeroIndex => "index is zero when it's suppposed to be non-zero",
             InterpolateKeyError::MalformedIndexes => "malformed share indexes",
             InterpolateKeyError::CannotVerifySecretKey => "the interpolated secret key cannot be verified against the provided public key (the secret key shares or the public key are invalid",
         };
         f.write_str(msg)
     }
+}
+
+#[cfg(test)]
+#[generic_tests::define(attrs(test, test_case::case))]
+mod tests {
+    use alloc::vec::Vec;
+
+    use generic_ec::{Curve, NonZero, Point, SecretScalar};
+    use rand::{seq::SliceRandom, CryptoRng, RngCore};
+
+    use super::KeySharePlaintext;
+
+    fn random_key<E: Curve>(
+        rng: &mut (impl RngCore + CryptoRng),
+        t: u16,
+        n: u16,
+    ) -> (Point<E>, Vec<KeySharePlaintext<E>>) {
+        let sk = NonZero::<SecretScalar<E>>::random(rng);
+
+        let key_shares = key_share::trusted_dealer::builder(n)
+            .set_threshold(Some(t))
+            .set_shared_secret_key(sk.clone())
+            .generate_shares(rng)
+            .unwrap();
+        let public_key = key_shares[0].shared_public_key;
+        let key_shares = key_shares
+            .into_iter()
+            .map(|share| share.into_inner())
+            .map(|share| KeySharePlaintext {
+                version: Default::default(),
+                index: share.share_preimage(share.i).unwrap(),
+                secret_share: share.x,
+            })
+            .collect::<Vec<_>>();
+
+        (*public_key, key_shares)
+    }
+
+    #[test_case::case(3, 5; "t3nt5")]
+    #[test_case::case(5, 5; "t5nt5")]
+    fn interpolate_sk<E: Curve>(t: u16, n: u16) {
+        let mut rng = rand_dev::DevRng::new();
+
+        // Generate a random key splitted into key shares
+        let (public_key, key_shares) = random_key::<E>(&mut rng, t, n);
+
+        // Interpolating less than `t` shares should return an error
+        for amount in 0..t {
+            let shares = key_shares
+                .choose_multiple(&mut rng, amount.into())
+                .cloned()
+                .collect::<Vec<_>>();
+            let result = super::interpolate_secret_key(&shares, &public_key);
+            assert!(matches!(
+                result,
+                Err(super::InterpolateKeyError::NoShares
+                    | super::InterpolateKeyError::CannotVerifySecretKey)
+            ))
+        }
+
+        // Interpolating `t` or more shares should always succeed
+        for amount in t..=n {
+            let shares = key_shares
+                .choose_multiple(&mut rng, amount.into())
+                .cloned()
+                .collect::<Vec<_>>();
+            let reconstructed_sk = super::interpolate_secret_key(&shares, &public_key).unwrap();
+            assert_eq!(public_key, Point::generator() * reconstructed_sk);
+        }
+
+        // Interpolating `t` shares with wrong `pk` leads to an error
+        {
+            let shares = key_shares
+                .choose_multiple(&mut rng, t.into())
+                .cloned()
+                .collect::<Vec<_>>();
+            let result = super::interpolate_secret_key(&shares, &(public_key + Point::generator()));
+            assert!(matches!(
+                result,
+                Err(super::InterpolateKeyError::NoShares
+                    | super::InterpolateKeyError::CannotVerifySecretKey)
+            ))
+        }
+    }
+
+    #[test]
+    fn decryption_with_invalid_key_fails<E: Curve>() {
+        let mut rng = rand_dev::DevRng::new();
+
+        // Generate a random key splitted into key shares
+        let (_, key_shares) = random_key::<E>(&mut rng, 3, 5);
+
+        // Generate encryption/decryption key-pair
+        let decryption_key = common::encryption::DecryptionKey::generate(&mut rng);
+
+        // Create a vector of encrypted shares and ids
+        let encrypted_shares_and_ids = key_shares
+            .iter()
+            .map(|s| {
+                let mut buffer = serde_json::to_vec(s).unwrap();
+                decryption_key
+                    .encryption_key()
+                    .encrypt(&mut rng, &[], &mut buffer)
+                    .unwrap();
+                super::EncryptedShareAndIdentity {
+                    //we use some public key as the identity of the signer
+                    signer_id: decryption_key.encryption_key().to_bytes().to_vec(),
+                    encrypted_key_share: buffer,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        // Decrypt them and parse them. This should succeed
+        let decrypted_key_shares_and_ids =
+            super::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids).unwrap();
+        let _ = super::parse_key_shares::<E>(&decrypted_key_shares_and_ids).unwrap();
+
+        // Now try to decrypt them with a diffent decryption key. It should return an error.
+        let another_decryption_key = common::encryption::DecryptionKey::generate(&mut rng);
+        let res = super::decrypt_key_shares(&another_decryption_key, &encrypted_shares_and_ids);
+        assert!(res.is_err());
+    }
+
+    #[instantiate_tests(<generic_ec::curves::Secp256k1>)]
+    mod secp256k1 {}
+    #[instantiate_tests(<generic_ec::curves::Stark>)]
+    mod stark {}
+    #[instantiate_tests(<generic_ec::curves::Ed25519>)]
+    mod ed25519 {}
 }

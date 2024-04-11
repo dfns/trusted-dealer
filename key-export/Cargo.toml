@@ -21,4 +21,8 @@ base64 = "0.21"
 getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
+rand = "0.8"
 rand_dev = "0.1"
+generic-tests = "0.1"
+test-case = "3" 
+key-share = { version = "0.2", features = ["spof"] }
