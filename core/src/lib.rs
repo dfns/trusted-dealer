@@ -11,6 +11,9 @@ extern crate alloc;
 #[cfg(target_arch = "wasm32")]
 pub use wasm_bindgen;
 
+pub use generic_ec;
+pub use rand_core;
+
 pub mod encryption;
 pub mod error;
 pub mod json_value;

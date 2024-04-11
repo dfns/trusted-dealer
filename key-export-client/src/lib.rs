@@ -21,10 +21,6 @@ use alloc::{format, vec::Vec};
 use base64::{engine::general_purpose, Engine as _};
 use rand_core::{self, RngCore};
 
-use dfns_key_export_common::{
-    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse,
-    KeySharePlaintext, SupportedScheme,
-};
 use dfns_trusted_dealer_core::{
     encryption::DecryptionKey,
     error::{Context, Error},
@@ -32,6 +28,11 @@ use dfns_trusted_dealer_core::{
     types::{KeyCurve, KeyProtocol},
 };
 use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
+
+pub use dfns_trusted_dealer_core::types::export::{
+    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse,
+    KeySharePlaintext, SupportedScheme,
+};
 
 #[cfg(target_arch = "wasm32")]
 use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};

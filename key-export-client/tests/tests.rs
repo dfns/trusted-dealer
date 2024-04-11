@@ -1,6 +1,6 @@
-use dfns_key_export_client::{interpolate_secret_key, InterpolateKeyError, KeyExportContext};
-use dfns_key_export_common::{
-    EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse, KeySharePlaintext,
+use dfns_key_export_client::{
+    interpolate_secret_key, EncryptedShareAndIdentity, InterpolateKeyError, KeyExportContext,
+    KeyExportRequest, KeyExportResponse, KeySharePlaintext,
 };
 use dfns_trusted_dealer_core::{
     encryption,

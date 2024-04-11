@@ -17,20 +17,19 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use common::{rand_core::CryptoRng, KeyImportRequest};
 use dfns_trusted_dealer_core::{
     error::{Context, Error},
     json_value::JsonValue,
-    types::{KeyCurve, KeyProtocol},
 };
+
+pub use dfns_trusted_dealer_core::types::{import, KeyCurve, KeyProtocol};
 
 #[cfg(target_arch = "wasm32")]
 use dfns_trusted_dealer_core::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-use dfns_key_import_common::{
-    self as common,
+use dfns_trusted_dealer_core::{
     generic_ec::{self, curves},
-    rand_core::{self, RngCore},
+    rand_core::{self, CryptoRng, RngCore},
 };
 
 /// Signers info
@@ -38,7 +37,7 @@ use dfns_key_import_common::{
 /// Contains information necessary to establish a secure communication channel with
 /// the signers who're going to host the imported key
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SignersInfo(common::SignersInfo);
+pub struct SignersInfo(import::SignersInfo);
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SignersInfo {
@@ -163,7 +162,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         generic_ec::NonZero::from_secret_scalar(secret_key).context("secret key is zero")?;
 
     // Split the secret key into the shares
-    let key_shares = common::split_secret_key(rng, min_signers, n, &secret_key)
+    let key_shares = split_secret_key(rng, min_signers, n, &secret_key)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share
@@ -181,7 +180,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         .zip(key_shares)
         .map(|(recipient, mut key_share)| {
             recipient.encryption_key.encrypt(rng, &[], &mut key_share)?;
-            Ok(common::KeyShareCiphertext {
+            Ok(import::KeyShareCiphertext {
                 encrypted_key_share: key_share,
                 signer_id: recipient.signer_id.clone(),
             })
@@ -190,7 +189,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         .map_err(|_| Error::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it
-    let req = KeyImportRequest {
+    let req = import::KeyImportRequest {
         min_signers: 3,
         protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
@@ -198,4 +197,51 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     };
 
     JsonValue::new(req).context("cannot serialize key-import request")
+}
+
+/// Splits secret key into key shares
+pub fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
+    rng: &mut R,
+    t: u16,
+    n: u16,
+    secret_key: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
+) -> Result<Vec<import::KeySharePlaintext<E>>, Error> {
+    if !(n > 1 && 2 <= t && t <= n) {
+        return Err(Error::new("invalid parameters t,n"));
+    }
+    let key_shares_indexes = (1..=n)
+        .map(|i| generic_ec::NonZero::from_scalar(generic_ec::Scalar::from(i)))
+        .collect::<Option<Vec<_>>>()
+        .ok_or_else(|| Error::new("zero key share preimage"))?;
+
+    let secret_shares = {
+        let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
+            rng,
+            usize::from(t) - 1,
+            secret_key.clone(),
+        );
+
+        key_shares_indexes
+            .iter()
+            .map(|i| f.value(i))
+            .map(|mut x| {
+                generic_ec::NonZero::from_secret_scalar(generic_ec::SecretScalar::new(&mut x))
+            })
+            .collect::<Option<Vec<_>>>()
+            .ok_or_else(|| Error::new("zero share"))?
+    };
+
+    let public_shares = secret_shares
+        .iter()
+        .map(|x| generic_ec::Point::generator() * x)
+        .collect::<Vec<generic_ec::NonZero<generic_ec::Point<E>>>>();
+
+    Ok(secret_shares
+        .into_iter()
+        .map(|secret_share| import::KeySharePlaintext {
+            version: Default::default(),
+            secret_share,
+            public_shares: public_shares.clone(),
+        })
+        .collect())
 }

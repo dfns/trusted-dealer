@@ -1,5 +1,6 @@
-use dfns_key_export_client::KeyExportContext;
-use dfns_key_export_common::{EncryptedShareAndIdentity, KeyExportResponse, KeySharePlaintext};
+use dfns_key_export_client::{
+    EncryptedShareAndIdentity, KeyExportContext, KeyExportResponse, KeySharePlaintext,
+};
 use dfns_trusted_dealer_core::{
     encryption,
     types::{KeyCurve, KeyProtocol},

@@ -270,7 +270,6 @@ name = "dfns-key-export-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.4",
- "dfns-key-export-common",
  "dfns-trusted-dealer-core",
  "generic-ec",
  "generic-ec-zkp",
@@ -279,51 +278,17 @@ dependencies = [
  "rand_dev",
  "serde_json",
  "zeroize",
-]
-
-[[package]]
-name = "dfns-key-export-common"
-version = "0.1.0"
-dependencies = [
- "dfns-trusted-dealer-core",
- "generic-ec",
- "generic-ec-zkp",
- "hex",
- "rand_core",
- "rand_dev",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
 ]
 
 [[package]]
 name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
- "dfns-key-import-common",
  "dfns-trusted-dealer-core",
+ "generic-ec-zkp",
  "getrandom",
  "serde_json",
  "zeroize",
-]
-
-[[package]]
-name = "dfns-key-import-common"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "dfns-trusted-dealer-core",
- "generic-ec",
- "generic-ec-zkp",
- "hex",
- "hkdf",
- "key-share",
- "rand_core",
- "rand_dev",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
- "sha2",
 ]
 
 [[package]]
@@ -333,12 +298,14 @@ dependencies = [
  "aes-gcm",
  "base64 0.21.4",
  "generic-ec",
+ "hex",
  "hkdf",
  "rand_core",
  "rand_dev",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
+ "serde_with 1.14.0",
  "sha2",
  "wasm-bindgen",
 ]
@@ -617,17 +584,6 @@ checksum = "cadb76004ed8e97623117f3df85b17aaa6626ab0b0831e6573f104df16cd1bcc"
 dependencies = [
  "cfg-if",
  "elliptic-curve",
-]
-
-[[package]]
-name = "key-share"
-version = "0.1.0"
-source = "git+https://github.com/dfns/cggmp21?branch=m#c4e218d7cf6e7378843c2990b878156c7f903d0b"
-dependencies = [
- "generic-ec",
- "generic-ec-zkp",
- "rand_core",
- "thiserror",
 ]
 
 [[package]]
@@ -965,26 +921,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "thiserror"
-version = "1.0.43"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a35fc5b8971143ca348fa6df4f024d4d55264f3468c71ad1c2f365b0a4d58c42"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.43"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "463fe12d7993d3b327787537ce8dd4dfa058de32fc2b195ef3cde03dc4771e8f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.26",
-]
-
-[[package]]
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1112,3 +1048,8 @@ dependencies = [
  "quote",
  "syn 2.0.26",
 ]
+
+[[patch.unused]]
+name = "key-share"
+version = "0.1.0"
+source = "git+https://github.com/dfns/cggmp21?branch=m#c4e218d7cf6e7378843c2990b878156c7f903d0b"

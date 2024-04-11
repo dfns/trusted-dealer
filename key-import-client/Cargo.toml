@@ -10,8 +10,9 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 serde_json = "1"
 
-dfns-key-import-common = { path = "../key-import-common" }
-dfns-trusted-dealer-core = { path = "../core" }
+dfns-trusted-dealer-core = { path = "../core", features = ["import"] }
+
+generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
 
 zeroize = { version = "1.7", default-features = false, features = ["alloc"]}
 
