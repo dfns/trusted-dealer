@@ -2,10 +2,6 @@ use common::{
     json_value::JsonValue,
     types::{KeyCurve, KeyProtocol},
 };
-use dfns_key_export::{
-    EncryptedShareAndIdentity, KeyExportContext, KeyExportRequest, KeyExportResponse,
-    KeySharePlaintext,
-};
 
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
 use rand::{CryptoRng, RngCore};
@@ -14,7 +10,7 @@ fn random_key<E: Curve>(
     rng: &mut (impl RngCore + CryptoRng),
     t: u16,
     n: u16,
-) -> (Point<E>, Vec<KeySharePlaintext<E>>) {
+) -> (Point<E>, Vec<dfns_key_export::types::KeySharePlaintext<E>>) {
     let sk = NonZero::<SecretScalar<E>>::random(rng);
 
     let key_shares = key_share::trusted_dealer::builder(n)
@@ -26,7 +22,7 @@ fn random_key<E: Curve>(
     let key_shares = key_shares
         .into_iter()
         .map(|share| share.into_inner())
-        .map(|share| KeySharePlaintext {
+        .map(|share| dfns_key_export::types::KeySharePlaintext {
             version: Default::default(),
             index: share.share_preimage(share.i).unwrap(),
             secret_share: share.x,
@@ -53,11 +49,11 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
     let (public_key, key_shares) = random_key::<E>(&mut rng, 3, 5);
 
     // Create a new KeyExportContext
-    let ctx = KeyExportContext::new().unwrap();
+    let ctx = dfns_key_export::KeyExportContext::new().unwrap();
 
     // Build a key export request
     let req = ctx.build_key_export_request().unwrap();
-    let req: KeyExportRequest = req.deserialize().unwrap();
+    let req: dfns_key_export::types::KeyExportRequest = req.deserialize().unwrap();
 
     // Construct KeyExportResponse
     let resp =
@@ -72,7 +68,7 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
     assert_eq!(public_key, Point::generator() * recovered_secret_key);
 
     // If we change the public key, key recovery fails
-    let resp = KeyExportResponse {
+    let resp = dfns_key_export::types::KeyExportResponse {
         public_key: (public_key + Point::generator()).to_bytes(true).to_vec(),
         ..resp
     };
@@ -92,18 +88,18 @@ fn exporting_unsupported_scheme_returns_error() {
     let (public_key, key_shares) = random_key::<E>(&mut rng, 3, 5);
 
     // Create a new KeyExportContext
-    let ctx = KeyExportContext::new().unwrap();
+    let ctx = dfns_key_export::KeyExportContext::new().unwrap();
 
     // Build a key export request
     let req = ctx.build_key_export_request().unwrap();
-    let req: KeyExportRequest = req.deserialize().unwrap();
+    let req: dfns_key_export::types::KeyExportRequest = req.deserialize().unwrap();
 
     // Construct KeyExportResponse
     let resp =
         build_key_export_response::<E>(&mut rng, &req, protocol, curve, public_key, &key_shares);
 
     // Change protocol to Gg18 which is not supported
-    let resp = KeyExportResponse {
+    let resp = dfns_key_export::types::KeyExportResponse {
         protocol: KeyProtocol::Gg18,
         ..resp
     };
@@ -115,28 +111,28 @@ fn exporting_unsupported_scheme_returns_error() {
 /// Takes a key export request and key to be exported, returns the key export response
 fn build_key_export_response<E: Curve>(
     rng: &mut (impl RngCore + CryptoRng),
-    req: &KeyExportRequest,
+    req: &dfns_key_export::types::KeyExportRequest,
     protocol: KeyProtocol,
     curve: KeyCurve,
     public_key: Point<E>,
-    key_shares: &[KeySharePlaintext<E>],
-) -> KeyExportResponse {
+    key_shares: &[dfns_key_export::types::KeySharePlaintext<E>],
+) -> dfns_key_export::types::KeyExportResponse {
     assert!(req
         .supported_schemes
-        .contains(&dfns_key_export::SupportedScheme { protocol, curve }));
+        .contains(&dfns_key_export::types::SupportedScheme { protocol, curve }));
     let enc_key = &req.encryption_key;
     let encrypted_shares_and_ids = key_shares
         .iter()
         .map(|s| {
             let mut buffer = serde_json::to_vec(s).unwrap();
             enc_key.encrypt(rng, &[], &mut buffer).unwrap();
-            EncryptedShareAndIdentity {
+            dfns_key_export::types::EncryptedShareAndIdentity {
                 signer_id: Vec::new(),
                 encrypted_key_share: buffer,
             }
         })
         .collect::<Vec<_>>();
-    KeyExportResponse {
+    dfns_key_export::types::KeyExportResponse {
         min_signers: 3,
         public_key: public_key.to_bytes(true).to_vec(),
         protocol,

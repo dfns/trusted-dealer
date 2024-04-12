@@ -25,28 +25,24 @@ use common::{
     encryption::DecryptionKey,
     error::{Context, Error},
     json_value::JsonValue,
-    types::{KeyCurve, KeyProtocol},
 };
 use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
 
-pub use common::types::export::{
-    DecryptedShareAndIdentity, EncryptedShareAndIdentity, KeyExportRequest, KeyExportResponse,
-    KeySharePlaintext, SupportedScheme,
-};
+pub use common::types::{export as types, KeyCurve, KeyProtocol};
 
 #[cfg(target_arch = "wasm32")]
 use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-const SUPPORTED_SCHEMES: [SupportedScheme; 3] = [
-    SupportedScheme {
+const SUPPORTED_SCHEMES: [types::SupportedScheme; 3] = [
+    types::SupportedScheme {
         protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
     },
-    SupportedScheme {
+    types::SupportedScheme {
         protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Stark,
     },
-    SupportedScheme {
+    types::SupportedScheme {
         protocol: KeyProtocol::Frost,
         curve: KeyCurve::Ed25519,
     },
@@ -105,7 +101,7 @@ impl KeyExportContext {
     /// Throws `Error` in case of failure.
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyExportRequest))]
     pub fn build_key_export_request(&self) -> Result<JsonValue, Error> {
-        let req = KeyExportRequest {
+        let req = types::KeyExportRequest {
             supported_schemes: Vec::from(SUPPORTED_SCHEMES),
             encryption_key: self.decryption_key.encryption_key(),
         };
@@ -120,7 +116,8 @@ impl KeyExportContext {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = recoverSecretKey))]
     pub fn recover_secret_key(&self, response: JsonValue) -> Result<SecretKey, Error> {
         // Parse response
-        let response: KeyExportResponse = response.deserialize().context("deserialize response")?;
+        let response: types::KeyExportResponse =
+            response.deserialize().context("deserialize response")?;
         // Parse and validate fields
         let min_signers: u16 = response
             .min_signers
@@ -194,8 +191,8 @@ impl KeyExportContext {
 /// containg the id of the signer with the first invalid share found.
 fn decrypt_key_shares(
     decryption_key: &DecryptionKey,
-    encrypted_shares_and_ids: &[EncryptedShareAndIdentity],
-) -> Result<Vec<DecryptedShareAndIdentity>, Error> {
+    encrypted_shares_and_ids: &[types::EncryptedShareAndIdentity],
+) -> Result<Vec<types::DecryptedShareAndIdentity>, Error> {
     let decrypted_key_shares = encrypted_shares_and_ids
         .iter()
         .map(|share| {
@@ -204,7 +201,7 @@ fn decrypt_key_shares(
                 "cannot decrypt a key share from signer with identity {}",
                 general_purpose::STANDARD_NO_PAD.encode(&share.signer_id)
             ))?;
-            Ok(DecryptedShareAndIdentity {
+            Ok(types::DecryptedShareAndIdentity {
                 signer_identity: share.signer_id.clone(),
                 decrypted_key_share: buffer,
             })
@@ -219,17 +216,16 @@ fn decrypt_key_shares(
 /// a vector of `KeySharePlaintext<E>`, and an error otherwise,
 /// containg the id of the signer with the first invalid share found.
 fn parse_key_shares<E: Curve>(
-    key_shares_and_ids: &[DecryptedShareAndIdentity],
-) -> Result<Vec<KeySharePlaintext<E>>, Error> {
+    key_shares_and_ids: &[types::DecryptedShareAndIdentity],
+) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
     let key_shares_plaintext = key_shares_and_ids
         .iter()
         .map(|share| {
-            serde_json::from_slice::<KeySharePlaintext<E>>(&share.decrypted_key_share).context(
-                &format!(
+            serde_json::from_slice::<types::KeySharePlaintext<E>>(&share.decrypted_key_share)
+                .context(&format!(
                     "cannot parse a key share from signer with identity {}",
                     general_purpose::STANDARD_NO_PAD.encode(&share.signer_identity)
-                ),
-            )
+                ))
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(key_shares_plaintext)
@@ -245,7 +241,7 @@ fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, Er
 /// In the end it verifies the computed key against the provided
 /// public key and returns an error if it doesn't match.
 fn interpolate_secret_key<E: Curve>(
-    key_shares: &[KeySharePlaintext<E>],
+    key_shares: &[types::KeySharePlaintext<E>],
     public_key: &Point<E>,
 ) -> Result<SecretScalar<E>, InterpolateKeyError> {
     // Validate input
@@ -312,13 +308,13 @@ mod tests {
     use generic_ec::{Curve, NonZero, Point, SecretScalar};
     use rand::{seq::SliceRandom, CryptoRng, RngCore};
 
-    use super::KeySharePlaintext;
+    use super::types;
 
     fn random_key<E: Curve>(
         rng: &mut (impl RngCore + CryptoRng),
         t: u16,
         n: u16,
-    ) -> (Point<E>, Vec<KeySharePlaintext<E>>) {
+    ) -> (Point<E>, Vec<types::KeySharePlaintext<E>>) {
         let sk = NonZero::<SecretScalar<E>>::random(rng);
 
         let key_shares = key_share::trusted_dealer::builder(n)
@@ -330,7 +326,7 @@ mod tests {
         let key_shares = key_shares
             .into_iter()
             .map(|share| share.into_inner())
-            .map(|share| KeySharePlaintext {
+            .map(|share| types::KeySharePlaintext {
                 version: Default::default(),
                 index: share.share_preimage(share.i).unwrap(),
                 secret_share: share.x,
@@ -406,7 +402,7 @@ mod tests {
                     .encryption_key()
                     .encrypt(&mut rng, &[], &mut buffer)
                     .unwrap();
-                super::EncryptedShareAndIdentity {
+                types::EncryptedShareAndIdentity {
                     //we use some public key as the identity of the signer
                     signer_id: decryption_key.encryption_key().to_bytes().to_vec(),
                     encrypted_key_share: buffer,
