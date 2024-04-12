@@ -4,7 +4,8 @@
 //! at customer side, encrypt them and build a key import request that needs to be sent
 //! to Dfns API.
 
-#![forbid(missing_docs, unused_crate_dependencies)]
+#![forbid(missing_docs)]
+#![cfg_attr(not(test), forbid(unused_crate_dependencies))]
 #![no_std]
 
 mod _unused_deps {
@@ -27,14 +28,14 @@ use common::{
 #[cfg(target_arch = "wasm32")]
 use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-pub use common::types::{import, KeyCurve, KeyProtocol};
+pub use common::types::{import as types, KeyCurve, KeyProtocol};
 
 /// Signers info
 ///
 /// Contains information necessary to establish a secure communication channel with
 /// the signers who're going to host the imported key
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SignersInfo(import::SignersInfo);
+pub struct SignersInfo(types::SignersInfo);
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl SignersInfo {
@@ -114,6 +115,8 @@ pub fn build_key_import_request(
         (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
             build_key_import_request_for_curve::<curves::Secp256k1>(
                 &mut rng,
+                protocol,
+                curve,
                 secret_key,
                 signers_info,
                 min_signers,
@@ -123,6 +126,8 @@ pub fn build_key_import_request(
         (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
             build_key_import_request_for_curve::<curves::Stark>(
                 &mut rng,
+                protocol,
+                curve,
                 secret_key,
                 signers_info,
                 min_signers,
@@ -132,6 +137,8 @@ pub fn build_key_import_request(
         (KeyProtocol::Frost, KeyCurve::Ed25519) => {
             build_key_import_request_for_curve::<curves::Ed25519>(
                 &mut rng,
+                protocol,
+                curve,
                 secret_key,
                 signers_info,
                 min_signers,
@@ -148,6 +155,8 @@ pub fn build_key_import_request(
 
 fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     rng: &mut (impl RngCore + CryptoRng),
+    protocol: KeyProtocol,
+    curve: KeyCurve,
     secret_key: &SecretKey,
     signers_info: &SignersInfo,
     min_signers: u16,
@@ -177,7 +186,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         .zip(key_shares)
         .map(|(recipient, mut key_share)| {
             recipient.encryption_key.encrypt(rng, &[], &mut key_share)?;
-            Ok(import::KeyShareCiphertext {
+            Ok(types::KeyShareCiphertext {
                 encrypted_key_share: key_share,
                 signer_id: recipient.signer_id.clone(),
             })
@@ -186,10 +195,10 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         .map_err(|_| Error::new("couldn't encrypt a key share"))?;
 
     // Build a request and serialize it
-    let req = import::KeyImportRequest {
-        min_signers: 3,
-        protocol: KeyProtocol::Cggmp21,
-        curve: KeyCurve::Secp256k1,
+    let req = types::KeyImportRequest {
+        min_signers: min_signers.into(),
+        protocol,
+        curve,
         encrypted_key_shares,
     };
 
@@ -197,12 +206,12 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
 }
 
 /// Splits secret key into key shares
-pub fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
+fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
     n: u16,
     secret_key: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
-) -> Result<Vec<import::KeySharePlaintext<E>>, Error> {
+) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error::new("invalid parameters t,n"));
     }
@@ -235,7 +244,7 @@ pub fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
 
     Ok(secret_shares
         .into_iter()
-        .map(|secret_share| import::KeySharePlaintext {
+        .map(|secret_share| types::KeySharePlaintext {
             version: Default::default(),
             secret_share,
             public_shares: public_shares.clone(),

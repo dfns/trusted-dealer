@@ -18,3 +18,10 @@ zeroize = { version = "1.7", default-features = false, features = ["alloc"]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+# rand = "0.8"
+# generic-tests = "0.1"
+rand_dev = "0.1"
+test-case = "3" 
+key-share = { version = "0.2", features = ["spof"] }

@@ -291,7 +291,10 @@ dependencies = [
  "dfns-trusted-dealer-common",
  "generic-ec-zkp",
  "getrandom",
+ "key-share",
+ "rand_dev",
  "serde_json",
+ "test-case",
  "zeroize",
 ]
 
