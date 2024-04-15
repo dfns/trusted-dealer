@@ -9,7 +9,7 @@ use core::fmt;
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug)]
 pub struct Error {
-    desc: String,
+    desc: alloc::string::String,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
