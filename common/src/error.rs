@@ -5,8 +5,6 @@
 
 use core::fmt;
 
-use alloc::string::String;
-
 /// Error type
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug)]
@@ -31,34 +29,27 @@ impl fmt::Display for Error {
 
 /// Error type
 #[cfg(target_arch = "wasm32")]
-pub struct Error(wasm_bindgen::JsValue);
+pub struct Error(wasm_bindgen::JsError);
 
 #[cfg(target_arch = "wasm32")]
 impl Error {
     /// Constructs an error
     pub fn new(desc: &str) -> Self {
-        Self(wasm_bindgen::JsError::new(desc).into())
+        Self(wasm_bindgen::JsError::new(desc))
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use wasm_bindgen::prelude::*;
-        #[wasm_bindgen]
-        extern "C" {
-            #[wasm_bindgen(js_name = String)]
-            pub fn to_string(value: &JsValue) -> String;
-        }
-
-        to_string(&self.0).fmt(f)
+        f.write_str("JsError")
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 impl From<Error> for wasm_bindgen::JsValue {
     fn from(err: Error) -> Self {
-        err.0
+        err.0.into()
     }
 }
 
