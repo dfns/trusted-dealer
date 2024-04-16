@@ -4,7 +4,7 @@
 //! Incrementing the version will force clients to update the library.
 
 /// Ensures the serialized version matches the version of the lib
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct VersionGuard<const V: u8>;
 
 impl<const V: u8> serde::Serialize for VersionGuard<V> {

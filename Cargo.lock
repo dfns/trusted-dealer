@@ -266,83 +266,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "dfns-key-export-client"
+name = "dfns-key-export"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.4",
- "dfns-key-export-common",
- "dfns-trusted-dealer-core",
+ "dfns-trusted-dealer-common",
  "generic-ec",
  "generic-ec-zkp",
+ "generic-tests",
  "getrandom",
- "hex",
+ "key-share",
+ "rand",
  "rand_core",
  "rand_dev",
- "serde-wasm-bindgen 0.6.0",
  "serde_json",
- "wasm-bindgen",
+ "test-case",
  "zeroize",
-]
-
-[[package]]
-name = "dfns-key-export-common"
-version = "0.1.0"
-dependencies = [
- "dfns-trusted-dealer-core",
- "generic-ec",
- "generic-ec-zkp",
- "hex",
- "rand_core",
- "rand_dev",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
 ]
 
 [[package]]
 name = "dfns-key-import"
 version = "0.1.0"
 dependencies = [
- "dfns-key-import-common",
- "dfns-trusted-dealer-core",
+ "dfns-trusted-dealer-common",
+ "generic-ec-zkp",
  "getrandom",
- "serde-wasm-bindgen 0.4.5",
+ "key-share",
+ "rand_dev",
  "serde_json",
- "wasm-bindgen",
+ "test-case",
  "zeroize",
 ]
 
 [[package]]
-name = "dfns-key-import-common"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "dfns-trusted-dealer-core",
- "generic-ec",
- "generic-ec-zkp",
- "hex",
- "hkdf",
- "key-share",
- "rand_core",
- "rand_dev",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
- "sha2",
-]
-
-[[package]]
-name = "dfns-trusted-dealer-core"
+name = "dfns-trusted-dealer-common"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "base64 0.21.4",
  "generic-ec",
+ "hex",
  "hkdf",
  "rand_core",
  "rand_dev",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
+ "serde_with 1.14.0",
  "sha2",
  "wasm-bindgen",
 ]
@@ -356,6 +326,17 @@ dependencies = [
  "block-buffer",
  "crypto-common",
  "subtle",
+]
+
+[[package]]
+name = "displaydoc"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "487585f4d0c6655fe74905e2504d8ad6908e4db67f744eb140876906c2f3175d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.26",
 ]
 
 [[package]]
@@ -455,9 +436,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec"
-version = "0.2.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f315ffeaae6a05691c5a27028b4ae960d3a430e406d0109ff8502e2f84ae97b"
+checksum = "6f5cb6bae30037a9462484c3f8c2290314b43e2ca09f7250a573165bcea9e914"
 dependencies = [
  "generic-ec-core",
  "generic-ec-curves",
@@ -472,9 +453,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-core"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cab102fc88bfc017c16e69d21edae6f41ab58bfe69eed09ed0a2cf10ec923f"
+checksum = "85e8a3654fc9ea7366dd5725644b3537ec516dc47ea1944afd3c150ccb6e2137"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -485,9 +466,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-curves"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a133d38cde4fef7aea4e367ca51f291db0248495a424ec4208cdace08ba59f4"
+checksum = "564382bd1935579ced6e7cd896f2d8703c0800d5411e8438cc8f6d953c9fb1e7"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek",
@@ -514,6 +495,17 @@ dependencies = [
  "serde",
  "subtle",
  "udigest",
+]
+
+[[package]]
+name = "generic-tests"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeb39ec0dacc89541b6eced815ab9e97f6b7d44078628abb090c6437763fd050"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -625,9 +617,11 @@ dependencies = [
 
 [[package]]
 name = "key-share"
-version = "0.1.0"
-source = "git+https://github.com/dfns/cggmp21?branch=m#c4e218d7cf6e7378843c2990b878156c7f903d0b"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30237f93fc5cb18529644aa3d2adeec21ea19067ce6ebaef68889c9f183201cc"
 dependencies = [
+ "displaydoc",
  "generic-ec",
  "generic-ec-zkp",
  "rand_core",
@@ -760,6 +754,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+dependencies = [
+ "libc",
+ "rand_chacha",
+ "rand_core",
+]
+
+[[package]]
 name = "rand_chacha"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -830,17 +835,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30e27d1e4fd7659406c492fd6cfaf2066ba8773de45ca75e855590f856dc34a9"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-wasm-bindgen"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b4c031cd0d9014307d82b8abf653c0290fbdaeb4c02d00c63cf52f728628bf"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -980,19 +974,52 @@ dependencies = [
 ]
 
 [[package]]
-name = "thiserror"
-version = "1.0.43"
+name = "test-case"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a35fc5b8971143ca348fa6df4f024d4d55264f3468c71ad1c2f365b0a4d58c42"
+checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
+dependencies = [
+ "test-case-macros",
+]
+
+[[package]]
+name = "test-case-core"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
+dependencies = [
+ "cfg-if",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.26",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.26",
+ "test-case-core",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e3de26b0965292219b4287ff031fcba86837900fe9cd2b34ea8ad893c0953d2"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.43"
+version = "1.0.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "463fe12d7993d3b327787537ce8dd4dfa058de32fc2b195ef3cde03dc4771e8f"
+checksum = "268026685b2be38d7103e9e507c938a1fcb3d7e6eb15e87870b617bf37b6d581"
 dependencies = [
  "proc-macro2",
  "quote",

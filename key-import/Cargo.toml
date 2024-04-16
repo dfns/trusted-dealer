@@ -1,0 +1,25 @@
+[package]
+name = "dfns-key-import"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde_json = "1"
+
+common = { package = "dfns-trusted-dealer-common", path = "../common", features = ["import"] }
+
+generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
+
+zeroize = { version = "1.7", default-features = false, features = ["alloc"]}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+rand_dev = "0.1"
+test-case = "3" 
+key-share = { version = "0.2", features = ["spof"] }

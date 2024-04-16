@@ -11,21 +11,28 @@ env:
   CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
-  build-and-test:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - dfns-trusted-dealer-common
+          - dfns-key-import
+          - dfns-key-export
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: "true"
+    - name: Run tests
+      run: cargo check -p ${{ matrix.package }}
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
       with:
         cache-on-failure: "true"
-    - uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: |
-          ${{ secrets.GENERIC_EC_KEY }}
-          ${{ secrets.CGGMP21_KEY }}
-          ${{ secrets.PAILLIER_ZK_KEY }}
-    - name: Build
-      run: cargo build
     - name: Run tests
       run: cargo test
   check-fmt:
@@ -41,12 +48,6 @@ jobs:
     - uses: Swatinem/rust-cache@v2
       with:
         cache-on-failure: "true"
-    - uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: |
-          ${{ secrets.GENERIC_EC_KEY }}
-          ${{ secrets.CGGMP21_KEY }}
-          ${{ secrets.PAILLIER_ZK_KEY }}
     - name: Run clippy
       run: cargo clippy --all --lib -- -D clippy::all -D clippy::unwrap_used -D clippy::expect_used
     - name: Run clippy tests
@@ -58,12 +59,6 @@ jobs:
     - uses: Swatinem/rust-cache@v2
       with:
         cache-on-failure: "true"
-    - uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: |
-          ${{ secrets.GENERIC_EC_KEY }}
-          ${{ secrets.CGGMP21_KEY }}
-          ${{ secrets.PAILLIER_ZK_KEY }}
     - name: Install wasm32-unknown-unknown toolchain
       run: rustup target add wasm32-unknown-unknown
     - name: Build import client on wasm32-unknown-unknown
@@ -71,12 +66,12 @@ jobs:
         cargo check -p dfns-key-import --target wasm32-unknown-unknown
     - name: Build export client on wasm32-unknown-unknown
       run:
-        cargo check -p dfns-key-export-client --target wasm32-unknown-unknown
+        cargo check -p dfns-key-export --target wasm32-unknown-unknown
     - name: Install wasm-pack
       uses: baptiste0928/cargo-install@v1
       with:
         crate: wasm-pack
     - name: wasm-pack an example project for import client
-      run: (cd key-import-client; wasm-pack build)
+      run: (cd key-import; wasm-pack build)
     - name: wasm-pack an example project for export client
-      run: (cd key-export-client; wasm-pack build)
+      run: (cd key-export; wasm-pack build)
