@@ -38,7 +38,7 @@ jobs:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: npm publish ./key-import/pkg --access restricted
+      run: npm publish ./key-import/pkg --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -68,6 +68,6 @@ jobs:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: npm publish ./key-export/pkg --access restricted
+      run: npm publish ./key-export/pkg --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

@@ -1,3 +1,6 @@
 # Trusted dealer
 
-Black box that accepts ECDSA private key and gives gg18 key shares
+This is part of [Dfns SDK] that contains cryptography code for importing and exporting key
+to/from Dfns.
+
+[Dfns SDK]: https://github.com/dfns/dfns-sdk-ts
