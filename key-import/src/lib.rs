@@ -50,20 +50,23 @@ impl SignersInfo {
 
 /// Secret key to be imported
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SecretKey {
+pub struct SecretScalar {
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl SecretKey {
+impl SecretScalar {
     /// Parses the secret key in big-endian format (the most widely-used format)
-    ///
-    /// Throws `Error` if secret key is invalid
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromBytesBE))]
-    pub fn from_bytes_be(bytes: Vec<u8>) -> Result<SecretKey, Error> {
-        Ok(Self {
+    pub fn from_bytes_be(bytes: Vec<u8>) -> SecretScalar {
+        Self {
             be_bytes: bytes.into(),
-        })
+        }
+    }
+
+    /// Returns bytes representation of the secret key in big-endian format
+    pub fn to_be_bytes(self) -> zeroize::Zeroizing<Vec<u8>> {
+        self.be_bytes
     }
 }
 
@@ -85,7 +88,7 @@ impl SecretKey {
 /// Throws `Error` in case of failure
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyImportRequest))]
 pub fn build_key_import_request(
-    secret_key: &SecretKey,
+    secret_scalar: &SecretScalar,
     signers_info: &SignersInfo,
     min_signers: u16,
     protocol: KeyProtocol,
@@ -117,7 +120,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -128,7 +131,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -139,7 +142,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -153,11 +156,36 @@ pub fn build_key_import_request(
     }
 }
 
+/// Converts EdDSA secret key into secret scalar that can be used for key import
+pub fn convert_eddsa_secret_key_to_scalar(secret_key: &[u8]) -> Result<SecretScalar, Error> {
+    let secret_key: &[u8; 32] = secret_key
+        .try_into()
+        .map_err(|_| Error::new("EdDSA secret key must be 32 bytes long"))?;
+
+    let h = <sha2::Sha512 as sha2::Digest>::digest(secret_key);
+    let mut h: zeroize::Zeroizing<[u8; 64]> = zeroize::Zeroizing::new(h.into());
+    let scalar_bytes = &mut h[0..32];
+
+    // The lowest three bits of the first octet are cleared
+    scalar_bytes[0] &= 0b1111_1000;
+    // the highest bit of the last octet is cleared
+    scalar_bytes[31] &= 0b0111_1111;
+    // and the second highest bit of the last octet is set
+    scalar_bytes[31] |= 0b0100_0000;
+
+    // Interpret `scalar_bytes` as LE integer, and take it modulo curve order
+    let scalar = zeroize::Zeroizing::new(
+        generic_ec::Scalar::<curves::Ed25519>::from_le_bytes_mod_order(scalar_bytes),
+    );
+
+    Ok(SecretScalar::from_bytes_be(scalar.to_be_bytes().to_vec()))
+}
+
 fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     rng: &mut (impl RngCore + CryptoRng),
     protocol: KeyProtocol,
     curve: KeyCurve,
-    secret_key: &SecretKey,
+    secret_key: &SecretScalar,
     signers_info: &SignersInfo,
     min_signers: u16,
     n: u16,
