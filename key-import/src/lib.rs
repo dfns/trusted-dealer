@@ -72,7 +72,7 @@ impl SecretScalar {
 
 /// Builds a request body that needs to be sent to Dfns API in order to import the given key.
 ///
-/// Takes as input the `secret_key` to be imported, `signers_info` (contains information
+/// Takes as input the `secret_scalar` to be imported, `signers_info` (contains information
 /// about the _n_ key holders, needs to be retrieved from Dfns API)
 /// `min_signers` (which will be the threshold and has to satisfy _2 ≤ min_signers ≤ n_),
 /// and the `protocol` and `curve` for which the imported key will be used.
@@ -185,18 +185,18 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     rng: &mut (impl RngCore + CryptoRng),
     protocol: KeyProtocol,
     curve: KeyCurve,
-    secret_key: &SecretScalar,
+    secret_scalar: &SecretScalar,
     signers_info: &SignersInfo,
     min_signers: u16,
     n: u16,
 ) -> Result<JsonValue, Error> {
-    let secret_key = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_key.be_bytes)
+    let secret_scalar = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_scalar.be_bytes)
         .context("malformed secret key")?;
-    let secret_key =
-        generic_ec::NonZero::from_secret_scalar(secret_key).context("secret key is zero")?;
+    let secret_scalar =
+        generic_ec::NonZero::from_secret_scalar(secret_scalar).context("secret key is zero")?;
 
     // Split the secret key into the shares
-    let key_shares = split_secret_key(rng, min_signers, n, &secret_key)
+    let key_shares = split_secret_scalar(rng, min_signers, n, &secret_scalar)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share
@@ -234,11 +234,11 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
 }
 
 /// Splits secret key into key shares
-fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
+fn split_secret_scalar<E: generic_ec::Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
     n: u16,
-    secret_key: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
+    secret_scalar: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
 ) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error::new("invalid parameters t,n"));
@@ -252,7 +252,7 @@ fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
             rng,
             usize::from(t) - 1,
-            secret_key.clone(),
+            secret_scalar.clone(),
         );
 
         key_shares_indexes
