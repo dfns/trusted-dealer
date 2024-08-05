@@ -63,8 +63,12 @@ impl SecretScalar {
             be_bytes: bytes.into(),
         }
     }
+}
 
+impl SecretScalar {
     /// Returns bytes representation of the secret key in big-endian format
+    ///
+    /// It is not exposed in WASM API
     pub fn to_be_bytes(self) -> zeroize::Zeroizing<Vec<u8>> {
         self.be_bytes
     }
