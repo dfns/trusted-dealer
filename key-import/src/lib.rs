@@ -48,7 +48,12 @@ impl SignersInfo {
     }
 }
 
-/// Secret key to be imported
+/// Secret key (represented by a scalar) to be imported
+///
+/// Our library only works with secret keys represented by a scalar. It's the case for ECDSA
+/// and Schnorr signing schemes. However, it is not the case for EdDSA. If you need to import
+/// an EdDSA secret key, you first need to convert it into the scalar by using
+/// [`convert_eddsa_secret_key_to_scalar`] function.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct SecretScalar {
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
