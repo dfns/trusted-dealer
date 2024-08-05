@@ -1,6 +1,6 @@
 [package]
 name = "dfns-key-import"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = false
 
@@ -17,6 +17,7 @@ serde_json = "1"
 common = { package = "dfns-trusted-dealer-common", path = "../common", features = ["import"] }
 
 generic-ec-zkp = { version = "0.2", default-features = false, features = ["serde", "alloc"] }
+sha2 = { version = "0.10", default-features = false }
 
 zeroize = { version = "1.7", default-features = false, features = ["alloc"]}
 
@@ -27,3 +28,5 @@ getrandom = { version = "0.2", features = ["js"] }
 rand_dev = "0.1"
 test-case = "3" 
 key-share = { version = "0.2", features = ["spof"] }
+
+ed25519 = { package = "ed25519-dalek", version = "2", default-features = false, features = ["hazmat"] }

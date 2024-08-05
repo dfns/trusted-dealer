@@ -1,6 +1,9 @@
 use core::iter;
 
-use common::generic_ec::{curves, Curve, NonZero, Point, Scalar};
+use common::{
+    generic_ec::{curves, Curve, NonZero, Point, Scalar},
+    rand_core::RngCore,
+};
 use dfns_key_import::{KeyCurve, KeyProtocol};
 use key_share::Validate;
 
@@ -43,7 +46,7 @@ fn key_import_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve, t: u16, n:
 
     // Build key import request
     let req = dfns_key_import::build_key_import_request(
-        &dfns_key_import::SecretKey::from_bytes_be(secret_key.to_be_bytes().to_vec()).unwrap(),
+        &dfns_key_import::SecretScalar::from_bytes_be(secret_key.to_be_bytes().to_vec()),
         &signers_info,
         t,
         protocol,
@@ -96,4 +99,34 @@ fn key_import_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve, t: u16, n:
     // Reconstruct secret key from the key shares
     let reconstructed_sk = key_share::reconstruct_secret_key(&key_shares).unwrap();
     assert_eq!(*reconstructed_sk.as_ref(), secret_key);
+}
+
+#[test]
+fn eddsa_key_to_scalar() {
+    let mut rng = rand_dev::DevRng::new();
+
+    for _ in 0..100 {
+        let mut secret_key = [0u8; 32];
+        rng.fill_bytes(&mut secret_key);
+
+        // Expected bytes representation of the scalar corresponding to the `secret_key`
+        // derived following the EdDSA spec using dalek library. In little-endian format.
+        let expected_le = ed25519::hazmat::ExpandedSecretKey::from(&secret_key)
+            .scalar
+            .to_bytes();
+        // Reverse order to big-endian
+        let expected_be = {
+            let mut bytes = expected_le;
+            bytes.reverse();
+            bytes
+        };
+
+        // Bytes representation of the scalar corresponding to the `secret_key` derived
+        // following the EdDSA spec using our library
+        let actual_be = dfns_key_import::convert_eddsa_secret_key_to_scalar(&secret_key)
+            .unwrap()
+            .to_be_bytes();
+
+        assert_eq!(expected_be, **actual_be);
+    }
 }

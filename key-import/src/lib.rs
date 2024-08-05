@@ -48,28 +48,40 @@ impl SignersInfo {
     }
 }
 
-/// Secret key to be imported
+/// Secret key (represented by a scalar) to be imported
+///
+/// Our library only works with secret keys represented by a scalar. It's the case for ECDSA
+/// and Schnorr signing schemes. However, it is not the case for EdDSA. If you need to import
+/// an EdDSA secret key, you first need to convert it into the scalar by using
+/// [`convert_eddsa_secret_key_to_scalar`] function.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SecretKey {
+pub struct SecretScalar {
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl SecretKey {
+impl SecretScalar {
     /// Parses the secret key in big-endian format (the most widely-used format)
-    ///
-    /// Throws `Error` if secret key is invalid
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromBytesBE))]
-    pub fn from_bytes_be(bytes: Vec<u8>) -> Result<SecretKey, Error> {
-        Ok(Self {
+    pub fn from_bytes_be(bytes: Vec<u8>) -> SecretScalar {
+        Self {
             be_bytes: bytes.into(),
-        })
+        }
+    }
+}
+
+impl SecretScalar {
+    /// Returns bytes representation of the secret key in big-endian format
+    ///
+    /// It is not exposed in WASM API
+    pub fn to_be_bytes(self) -> zeroize::Zeroizing<Vec<u8>> {
+        self.be_bytes
     }
 }
 
 /// Builds a request body that needs to be sent to Dfns API in order to import the given key.
 ///
-/// Takes as input the `secret_key` to be imported, `signers_info` (contains information
+/// Takes as input the `secret_scalar` to be imported, `signers_info` (contains information
 /// about the _n_ key holders, needs to be retrieved from Dfns API)
 /// `min_signers` (which will be the threshold and has to satisfy _2 ≤ min_signers ≤ n_),
 /// and the `protocol` and `curve` for which the imported key will be used.
@@ -85,7 +97,7 @@ impl SecretKey {
 /// Throws `Error` in case of failure
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyImportRequest))]
 pub fn build_key_import_request(
-    secret_key: &SecretKey,
+    secret_scalar: &SecretScalar,
     signers_info: &SignersInfo,
     min_signers: u16,
     protocol: KeyProtocol,
@@ -117,7 +129,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -128,7 +140,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -139,7 +151,7 @@ pub fn build_key_import_request(
                 &mut rng,
                 protocol,
                 curve,
-                secret_key,
+                secret_scalar,
                 signers_info,
                 min_signers,
                 n,
@@ -153,22 +165,47 @@ pub fn build_key_import_request(
     }
 }
 
+/// Converts EdDSA secret key into secret scalar that can be used for key import
+pub fn convert_eddsa_secret_key_to_scalar(secret_key: &[u8]) -> Result<SecretScalar, Error> {
+    let secret_key: &[u8; 32] = secret_key
+        .try_into()
+        .map_err(|_| Error::new("EdDSA secret key must be 32 bytes long"))?;
+
+    let h = <sha2::Sha512 as sha2::Digest>::digest(secret_key);
+    let mut h: zeroize::Zeroizing<[u8; 64]> = zeroize::Zeroizing::new(h.into());
+    let scalar_bytes = &mut h[0..32];
+
+    // The lowest three bits of the first octet are cleared
+    scalar_bytes[0] &= 0b1111_1000;
+    // the highest bit of the last octet is cleared
+    scalar_bytes[31] &= 0b0111_1111;
+    // and the second highest bit of the last octet is set
+    scalar_bytes[31] |= 0b0100_0000;
+
+    // Interpret `scalar_bytes` as LE integer, and take it modulo curve order
+    let scalar = zeroize::Zeroizing::new(
+        generic_ec::Scalar::<curves::Ed25519>::from_le_bytes_mod_order(scalar_bytes),
+    );
+
+    Ok(SecretScalar::from_bytes_be(scalar.to_be_bytes().to_vec()))
+}
+
 fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     rng: &mut (impl RngCore + CryptoRng),
     protocol: KeyProtocol,
     curve: KeyCurve,
-    secret_key: &SecretKey,
+    secret_scalar: &SecretScalar,
     signers_info: &SignersInfo,
     min_signers: u16,
     n: u16,
 ) -> Result<JsonValue, Error> {
-    let secret_key = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_key.be_bytes)
+    let secret_scalar = generic_ec::SecretScalar::<E>::from_be_bytes(&secret_scalar.be_bytes)
         .context("malformed secret key")?;
-    let secret_key =
-        generic_ec::NonZero::from_secret_scalar(secret_key).context("secret key is zero")?;
+    let secret_scalar =
+        generic_ec::NonZero::from_secret_scalar(secret_scalar).context("secret key is zero")?;
 
     // Split the secret key into the shares
-    let key_shares = split_secret_key(rng, min_signers, n, &secret_key)
+    let key_shares = split_secret_scalar(rng, min_signers, n, &secret_scalar)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share
@@ -206,11 +243,11 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
 }
 
 /// Splits secret key into key shares
-fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
+fn split_secret_scalar<E: generic_ec::Curve, R: RngCore + CryptoRng>(
     rng: &mut R,
     t: u16,
     n: u16,
-    secret_key: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
+    secret_scalar: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
 ) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error::new("invalid parameters t,n"));
@@ -224,7 +261,7 @@ fn split_secret_key<E: generic_ec::Curve, R: RngCore + CryptoRng>(
         let f = generic_ec_zkp::polynomial::Polynomial::sample_with_const_term(
             rng,
             usize::from(t) - 1,
-            secret_key.clone(),
+            secret_scalar.clone(),
         );
 
         key_shares_indexes

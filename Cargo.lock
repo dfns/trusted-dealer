@@ -165,6 +165,7 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "curve25519-dalek-derive",
+ "digest",
  "fiat-crypto",
  "group",
  "platforms",
@@ -267,7 +268,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-export"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.21.4",
  "dfns-trusted-dealer-common",
@@ -286,14 +287,16 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-import"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dfns-trusted-dealer-common",
+ "ed25519-dalek",
  "generic-ec-zkp",
  "getrandom",
  "key-share",
  "rand_dev",
  "serde_json",
+ "sha2",
  "test-case",
  "zeroize",
 ]
@@ -337,6 +340,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.26",
+]
+
+[[package]]
+name = "ed25519"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
+dependencies = [
+ "signature",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a3daa8e81a3963a60642bcc1f90a670680bd4a77535faa384e9d1c79d620871"
+dependencies = [
+ "curve25519-dalek",
+ "ed25519",
+ "sha2",
+ "subtle",
 ]
 
 [[package]]
@@ -925,6 +949,12 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
+
+[[package]]
+name = "signature"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 
 [[package]]
 name = "stark-curve"
