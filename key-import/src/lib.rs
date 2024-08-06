@@ -166,6 +166,7 @@ pub fn build_key_import_request(
 }
 
 /// Converts EdDSA secret key into secret scalar that can be used for key import
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = convertEddsaSecretKeyToScalar))]
 pub fn convert_eddsa_secret_key_to_scalar(secret_key: &[u8]) -> Result<SecretScalar, Error> {
     let secret_key: &[u8; 32] = secret_key
         .try_into()
