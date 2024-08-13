@@ -31,14 +31,20 @@ jobs:
       with:
         crate: wasm-pack
     - name: wasm-pack build
-      run: wasm-pack build --target nodejs --scope dfns key-import
+      run: |
+        wasm-pack build --target nodejs --out-dir pkg-nodejs --scope dfns key-import
+        wasm-pack build --target bundler --out-dir pkg-bundler --scope dfns key-import
+        sed -i 's/@dfns\/dfns-key-import/@dfns\/dfns-key-import-nodejs/g' key-import/pkg-nodejs/package.json
+        sed -i 's/@dfns\/dfns-key-import/@dfns\/dfns-key-import-bundler/g' key-import/pkg-bundler/package.json
 
     - uses: actions/setup-node@v4
       with:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: npm publish ./key-import/pkg --access public
+      run: |
+        npm publish ./key-import/pkg-nodejs --access public
+        npm publish ./key-import/pkg-bundler --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -61,13 +67,18 @@ jobs:
       with:
         crate: wasm-pack
     - name: wasm-pack build
-      run: wasm-pack build --target nodejs --scope dfns key-export
-
+      run: |
+        wasm-pack build --target nodejs --out-dir pkg-nodejs --scope dfns key-export
+        wasm-pack build --target bundler --out-dir pkg-bundler --scope dfns key-export
+        sed -i 's/@dfns\/dfns-key-export/@dfns\/dfns-key-export-nodejs/g' key-export/pkg-nodejs/package.json
+        sed -i 's/@dfns\/dfns-key-export/@dfns\/dfns-key-export-bundler/g' key-export/pkg-bundler/package.json
     - uses: actions/setup-node@v4
       with:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: npm publish ./key-export/pkg --access public
+      run: |
+        npm publish ./key-export/pkg-nodejs --access public
+        npm publish ./key-export/pkg-bundler --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

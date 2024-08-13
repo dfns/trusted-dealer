@@ -26,7 +26,7 @@ use common::{
     error::{Context, Error},
     json_value::JsonValue,
 };
-use generic_ec::{curves, Curve, NonZero, Point, Scalar, SecretScalar};
+use generic_ec::{curves, Curve, NonZero, Point, Scalar};
 
 pub use common::types::{export as types, KeyCurve, KeyProtocol};
 
@@ -50,13 +50,13 @@ const SUPPORTED_SCHEMES: [types::SupportedScheme; 3] = [
 
 /// Secret key to be exported
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct SecretKey {
+pub struct SecretScalar {
     /// Secret key serialized as bytes in big-endian
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl SecretKey {
+impl SecretScalar {
     /// Serializes the secret key in big-endian format.
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toBytesBE))]
     pub fn to_bytes_be(&self) -> Vec<u8> {
@@ -114,7 +114,7 @@ impl KeyExportContext {
     /// or an `Error` (if the private key cannot be recovered,
     /// or is recovered but doesn’t match the public_key).
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = recoverSecretKey))]
-    pub fn recover_secret_key(&self, response: JsonValue) -> Result<SecretKey, Error> {
+    pub fn recover_secret_scalar(&self, response: JsonValue) -> Result<SecretScalar, Error> {
         // Parse response
         let response: types::KeyExportResponse =
             response.deserialize().context("deserialize response")?;
@@ -139,11 +139,11 @@ impl KeyExportContext {
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
         // perform the interpolation, and return the private key.
-        let secret_key = match (response.protocol, response.curve) {
+        let secret_scalar = match (response.protocol, response.curve) {
             (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_key::<curves::Secp256k1>(&key_shares, &public_key)
+                interpolate_secret_scalar::<curves::Secp256k1>(&key_shares, &public_key)
                     .context("interpolation failed")?
                     .as_ref()
                     .to_be_bytes()
@@ -153,7 +153,7 @@ impl KeyExportContext {
             (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_key::<curves::Stark>(&key_shares, &public_key)
+                interpolate_secret_scalar::<curves::Stark>(&key_shares, &public_key)
                     .context("interpolation failed")?
                     .as_ref()
                     .to_be_bytes()
@@ -163,7 +163,7 @@ impl KeyExportContext {
             (KeyProtocol::Frost, KeyCurve::Ed25519) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_key::<curves::Ed25519>(&key_shares, &public_key)
+                interpolate_secret_scalar::<curves::Ed25519>(&key_shares, &public_key)
                     .context("interpolation failed")?
                     .as_ref()
                     .to_be_bytes()
@@ -178,8 +178,8 @@ impl KeyExportContext {
                 )));
             }
         };
-        Ok(SecretKey {
-            be_bytes: secret_key,
+        Ok(SecretScalar {
+            be_bytes: secret_scalar,
         })
     }
 }
@@ -188,7 +188,7 @@ impl KeyExportContext {
 ///
 /// If all ciphertexts are successfully decrypted, it returns
 /// a vector of `DecryptedShareAndIdentity`, and an error otherwise,
-/// containg the id of the signer with the first invalid share found.
+/// containing the id of the signer with the first invalid share found.
 fn decrypt_key_shares(
     decryption_key: &DecryptionKey,
     encrypted_shares_and_ids: &[types::EncryptedShareAndIdentity],
@@ -214,7 +214,7 @@ fn decrypt_key_shares(
 ///
 /// If all shares are successfully parsed, it returns
 /// a vector of `KeySharePlaintext<E>`, and an error otherwise,
-/// containg the id of the signer with the first invalid share found.
+/// containing the id of the signer with the first invalid share found.
 fn parse_key_shares<E: Curve>(
     key_shares_and_ids: &[types::DecryptedShareAndIdentity],
 ) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
@@ -240,10 +240,10 @@ fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, Er
 ///
 /// In the end it verifies the computed key against the provided
 /// public key and returns an error if it doesn't match.
-fn interpolate_secret_key<E: Curve>(
+fn interpolate_secret_scalar<E: Curve>(
     key_shares: &[types::KeySharePlaintext<E>],
     public_key: &Point<E>,
-) -> Result<SecretScalar<E>, InterpolateKeyError> {
+) -> Result<generic_ec::SecretScalar<E>, InterpolateKeyError> {
     // Validate input
     let n = key_shares.len();
     if n == 0 {
@@ -258,7 +258,7 @@ fn interpolate_secret_key<E: Curve>(
     let secret_shares = key_shares.iter().map(|s| (s.secret_share.clone()));
 
     // Interpolate
-    let mut interpolated_secret_key = {
+    let mut interpolated_secret_scalar = {
         let lagrange_coefs = (0..n)
             .map(|j| generic_ec_zkp::polynomial::lagrange_coefficient(Scalar::zero(), j, &indexes));
         lagrange_coefs
@@ -270,17 +270,19 @@ fn interpolate_secret_key<E: Curve>(
 
     // Compute the public key that corresponds to the interpolated secret key
     // and check whether it matches the given one.
-    if Point::generator() * interpolated_secret_key != *public_key {
+    if Point::generator() * interpolated_secret_scalar != *public_key {
         return Err(InterpolateKeyError::CannotVerifySecretKey);
     }
 
-    Ok(SecretScalar::new(&mut interpolated_secret_key))
+    Ok(generic_ec::SecretScalar::new(
+        &mut interpolated_secret_scalar,
+    ))
 }
 
-/// Structure to describe errors in interpolate_secret_key()
+/// Structure to describe errors in interpolate_secret_scalar()
 #[derive(Debug)]
 enum InterpolateKeyError {
-    /// Input to interpolate_secret_key() contains not enough shares
+    /// Input to interpolate_secret_scalar() contains not enough shares
     NoShares,
     /// Internal error. Malformed indexes at secret reconstruction
     MalformedIndexes,
@@ -288,7 +290,7 @@ enum InterpolateKeyError {
     CannotVerifySecretKey,
 }
 
-/// Structure to describe errors in interpolate_secret_key
+/// Structure to describe errors in interpolate_secret_scalar
 impl core::fmt::Display for InterpolateKeyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let msg = match self {
@@ -350,7 +352,7 @@ mod tests {
                 .choose_multiple(&mut rng, amount.into())
                 .cloned()
                 .collect::<Vec<_>>();
-            let result = super::interpolate_secret_key(&shares, &public_key);
+            let result = super::interpolate_secret_scalar(&shares, &public_key);
             assert!(matches!(
                 result,
                 Err(super::InterpolateKeyError::NoShares
@@ -364,7 +366,7 @@ mod tests {
                 .choose_multiple(&mut rng, amount.into())
                 .cloned()
                 .collect::<Vec<_>>();
-            let reconstructed_sk = super::interpolate_secret_key(&shares, &public_key).unwrap();
+            let reconstructed_sk = super::interpolate_secret_scalar(&shares, &public_key).unwrap();
             assert_eq!(public_key, Point::generator() * reconstructed_sk);
         }
 
@@ -374,7 +376,8 @@ mod tests {
                 .choose_multiple(&mut rng, t.into())
                 .cloned()
                 .collect::<Vec<_>>();
-            let result = super::interpolate_secret_key(&shares, &(public_key + Point::generator()));
+            let result =
+                super::interpolate_secret_scalar(&shares, &(public_key + Point::generator()));
             assert!(matches!(
                 result,
                 Err(super::InterpolateKeyError::NoShares
@@ -415,7 +418,7 @@ mod tests {
             super::decrypt_key_shares(&decryption_key, &encrypted_shares_and_ids).unwrap();
         let _ = super::parse_key_shares::<E>(&decrypted_key_shares_and_ids).unwrap();
 
-        // Now try to decrypt them with a diffent decryption key. It should return an error.
+        // Now try to decrypt them with a different decryption key. It should return an error.
         let another_decryption_key = common::encryption::DecryptionKey::generate(&mut rng);
         let res = super::decrypt_key_shares(&another_decryption_key, &encrypted_shares_and_ids);
         assert!(res.is_err());

@@ -62,7 +62,7 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
 
     // Recover secret key
     let recovered_secret_key = ctx
-        .recover_secret_key(resp_json)
+        .recover_secret_scalar(resp_json)
         .expect("this call should not return error");
     let recovered_secret_key = Scalar::from_be_bytes(recovered_secret_key.to_bytes_be()).unwrap();
     assert_eq!(public_key, Point::generator() * recovered_secret_key);
@@ -73,7 +73,7 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
         ..resp
     };
     let resp = JsonValue::new(resp).unwrap();
-    let recovered_secret_key = ctx.recover_secret_key(resp);
+    let recovered_secret_key = ctx.recover_secret_scalar(resp);
     assert!(recovered_secret_key.is_err());
 }
 
@@ -104,7 +104,7 @@ fn exporting_unsupported_scheme_returns_error() {
         ..resp
     };
     let resp = JsonValue::new(resp).unwrap();
-    let recovered_secret_key = ctx.recover_secret_key(resp);
+    let recovered_secret_key = ctx.recover_secret_scalar(resp);
     assert!(recovered_secret_key.is_err());
 }
 
