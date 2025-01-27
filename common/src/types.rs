@@ -16,6 +16,8 @@ pub enum KeyProtocol {
     Cggmp21,
     /// FROST
     Frost,
+    /// FROST variant that is compatible with Bitcoin Schnorr
+    FrostBitcoin,
 }
 
 /// The curve for which a key can be used

@@ -140,7 +140,8 @@ impl KeyExportContext {
         // Depending on the protocol/curve combination, parse key_shares and public_key,
         // perform the interpolation, and return the private key.
         let secret_scalar = match (response.protocol, response.curve) {
-            (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
+            (KeyProtocol::Cggmp21, KeyCurve::Secp256k1)
+            | (KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
                 interpolate_secret_scalar::<curves::Secp256k1>(&key_shares, &public_key)
