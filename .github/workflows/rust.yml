@@ -3,8 +3,6 @@ name: Rust
 on:
   pull_request:
     branches: [ "*" ]
-  schedule:
-    - cron: '0 5 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -75,3 +73,9 @@ jobs:
       run: (cd key-import; wasm-pack build)
     - name: wasm-pack an example project for export client
       run: (cd key-export; wasm-pack build)
+  check-changelog:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check changelogs
+      run: ./.github/changelog.sh

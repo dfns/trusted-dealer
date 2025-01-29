@@ -1,6 +1,6 @@
 [package]
 name = "dfns-key-export"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 publish = false
 
@@ -12,7 +12,7 @@ description = "Cryptography code for exporting a key from Dfns"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-common = { package = "dfns-trusted-dealer-common", path = "../common", features = ["export"] }
+common = { package = "dfns-trusted-dealer-common", version = "0.1.1", path = "../common", features = ["export"] }
 generic-ec = { version = "0.4", default-features = false, features = ["serde", "curve-secp256k1", "curve-stark", "curve-ed25519"] }
 generic-ec-zkp = { version = "0.4", default-features = false, features = ["serde", "alloc"] }
 zeroize = { version = "1.7", default-features = false, features = ["alloc"]}

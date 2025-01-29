@@ -1,6 +1,6 @@
 [package]
 name = "dfns-key-import"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 publish = false
 
@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 serde_json = "1"
 
-common = { package = "dfns-trusted-dealer-common", path = "../common", features = ["import"] }
+common = { package = "dfns-trusted-dealer-common", version = "0.1.1", path = "../common", features = ["import"] }
 
 generic-ec-zkp = { version = "0.4", default-features = false, features = ["serde", "alloc"] }
 sha2 = { version = "0.10", default-features = false }

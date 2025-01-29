@@ -124,7 +124,8 @@ pub fn build_key_import_request(
     };
 
     match (protocol, curve) {
-        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1) => {
+        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1)
+        | (KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1) => {
             build_key_import_request_for_curve::<curves::Secp256k1>(
                 &mut rng,
                 protocol,
