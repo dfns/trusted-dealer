@@ -33,7 +33,7 @@ pub use common::types::{export as types, KeyCurve, KeyProtocol};
 #[cfg(target_arch = "wasm32")]
 use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-const SUPPORTED_SCHEMES: [types::SupportedScheme; 3] = [
+const SUPPORTED_SCHEMES: [types::SupportedScheme; 4] = [
     types::SupportedScheme {
         protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
@@ -45,6 +45,10 @@ const SUPPORTED_SCHEMES: [types::SupportedScheme; 3] = [
     types::SupportedScheme {
         protocol: KeyProtocol::Frost,
         curve: KeyCurve::Ed25519,
+    },
+    types::SupportedScheme {
+        protocol: KeyProtocol::FrostBitcoin,
+        curve: KeyCurve::Secp256k1,
     },
 ];
 

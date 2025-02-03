@@ -35,6 +35,7 @@ fn random_key<E: Curve>(
 #[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1; "cggmp21_secp256k1")]
 #[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Stark; "cggmp21_stark")]
 #[test_case::case(KeyProtocol::Frost, KeyCurve::Ed25519; "frost_ed25519")]
+#[test_case::case(KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1; "frost_bitcoin")]
 fn key_export(protocol: KeyProtocol, curve: KeyCurve) {
     match curve {
         KeyCurve::Secp256k1 => key_export_inner::<generic_ec::curves::Secp256k1>(protocol, curve),
@@ -54,6 +55,10 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
     // Build a key export request
     let req = ctx.build_key_export_request().unwrap();
     let req: dfns_key_export::types::KeyExportRequest = req.deserialize().unwrap();
+
+    assert!(req
+        .supported_schemes
+        .contains(&dfns_key_export::types::SupportedScheme { protocol, curve }));
 
     // Construct KeyExportResponse
     let resp =
