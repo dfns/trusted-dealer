@@ -293,6 +293,7 @@ dependencies = [
  "generic-ec-zkp",
  "getrandom",
  "key-share",
+ "rand",
  "rand_dev",
  "serde_json",
  "sha2",

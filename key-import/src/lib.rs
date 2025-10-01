@@ -81,10 +81,10 @@ impl SecretScalar {
 
 /// Builds a request body that needs to be sent to Dfns API in order to import the given key.
 ///
-/// Takes as input the `secret_scalar` to be imported, `signers_info` (contains information
-/// about the _n_ key holders, needs to be retrieved from Dfns API)
-/// `min_signers` (which will be the threshold and has to satisfy _2 ≤ min_signers ≤ n_),
-/// and the `protocol` and `curve` for which the imported key will be used.
+/// Takes as input the `secret_scalar` to be imported, `chain_code` for HD-capable keys (`None`
+/// disables HD derivation) `signers_info` (contains information about the _n_ key holders, needs to
+/// be retrieved from Dfns API), `min_signers` (which will be the threshold and has to satisfy _2 ≤
+/// min_signers ≤ n_), and the `protocol` and `curve` for which the imported key will be used.
 ///
 /// Returns a body of the request that needs to be sent to Dfns API in order to import the given key.
 ///
@@ -98,6 +98,7 @@ impl SecretScalar {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = buildKeyImportRequest))]
 pub fn build_key_import_request(
     secret_scalar: &SecretScalar,
+    chain_code: Option<Vec<u8>>,
     signers_info: &SignersInfo,
     min_signers: u16,
     protocol: KeyProtocol,
@@ -123,6 +124,11 @@ pub fn build_key_import_request(
         ));
     };
 
+    let chain_code = chain_code
+        .map(|c| c.try_into())
+        .transpose()
+        .map_err(|_| Error::new("chain code has invalid length"))?;
+
     match (protocol, curve) {
         (KeyProtocol::Cggmp21, KeyCurve::Secp256k1)
         | (KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1) => {
@@ -131,6 +137,7 @@ pub fn build_key_import_request(
                 protocol,
                 curve,
                 secret_scalar,
+                chain_code,
                 signers_info,
                 min_signers,
                 n,
@@ -142,6 +149,7 @@ pub fn build_key_import_request(
                 protocol,
                 curve,
                 secret_scalar,
+                chain_code,
                 signers_info,
                 min_signers,
                 n,
@@ -153,6 +161,7 @@ pub fn build_key_import_request(
                 protocol,
                 curve,
                 secret_scalar,
+                chain_code,
                 signers_info,
                 min_signers,
                 n,
@@ -192,11 +201,13 @@ pub fn convert_eddsa_secret_key_to_scalar(secret_key: &[u8]) -> Result<SecretSca
     Ok(SecretScalar::from_bytes_be(scalar.to_be_bytes().to_vec()))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_key_import_request_for_curve<E: generic_ec::Curve>(
     rng: &mut (impl RngCore + CryptoRng),
     protocol: KeyProtocol,
     curve: KeyCurve,
     secret_scalar: &SecretScalar,
+    chain_code: Option<[u8; 32]>,
     signers_info: &SignersInfo,
     min_signers: u16,
     n: u16,
@@ -207,7 +218,7 @@ fn build_key_import_request_for_curve<E: generic_ec::Curve>(
         generic_ec::NonZero::from_secret_scalar(secret_scalar).context("secret key is zero")?;
 
     // Split the secret key into the shares
-    let key_shares = split_secret_scalar(rng, min_signers, n, &secret_scalar)
+    let key_shares = split_secret_scalar(rng, min_signers, n, &secret_scalar, chain_code)
         .context("failed to split secret key into key shares")?;
 
     // Serialize each share
@@ -250,6 +261,7 @@ fn split_secret_scalar<E: generic_ec::Curve, R: RngCore + CryptoRng>(
     t: u16,
     n: u16,
     secret_scalar: &generic_ec::NonZero<generic_ec::SecretScalar<E>>,
+    chain_code: Option<[u8; 32]>,
 ) -> Result<Vec<types::KeySharePlaintext<E>>, Error> {
     if !(n > 1 && 2 <= t && t <= n) {
         return Err(Error::new("invalid parameters t,n"));
@@ -287,6 +299,7 @@ fn split_secret_scalar<E: generic_ec::Curve, R: RngCore + CryptoRng>(
             version: Default::default(),
             secret_share,
             public_shares: public_shares.clone(),
+            chain_code,
         })
         .collect())
 }

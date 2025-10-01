@@ -6,6 +6,7 @@ use common::{
 };
 use dfns_key_import::{KeyCurve, KeyProtocol};
 use key_share::Validate;
+use rand::Rng;
 
 #[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1, 3, 5; "cggmp21_secp256k1_t3n5")]
 #[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1, 2, 3; "cggmp21_secp256k1_t2n3")]
@@ -43,10 +44,12 @@ fn key_import_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve, t: u16, n:
     // Generate key to be imported
     let secret_key = NonZero::<Scalar<E>>::random(&mut rng);
     let public_key = Point::generator() * secret_key;
+    let chain_code: [u8; 32] = rng.gen();
 
     // Build key import request
     let req = dfns_key_import::build_key_import_request(
         &dfns_key_import::SecretScalar::from_bytes_be(secret_key.to_be_bytes().to_vec()),
+        Some(chain_code.to_vec()),
         &signers_info,
         t,
         protocol,
@@ -71,6 +74,8 @@ fn key_import_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve, t: u16, n:
             serde_json::from_slice(&key_share).unwrap()
         })
         .collect();
+
+    assert!(key_shares.iter().all(|s| s.chain_code == Some(chain_code)));
 
     let key_shares = (0u16..)
         .zip(key_shares)

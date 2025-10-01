@@ -14,6 +14,8 @@ pub enum KeyProtocol {
     BinanceEddsa,
     /// CGGMP21
     Cggmp21,
+    /// KU23
+    Ku23,
     /// FROST
     Frost,
     /// FROST variant that is compatible with Bitcoin Schnorr
@@ -48,6 +50,7 @@ pub mod import {
     const VERSION: u8 = 1;
 
     /// Format of decrypted key share
+    #[serde_as]
     #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
     #[serde(bound = "")]
     pub struct KeySharePlaintext<E: Curve> {
@@ -57,6 +60,10 @@ pub mod import {
         pub secret_share: NonZero<SecretScalar<E>>,
         /// `public_shares[j]` is commitment to secret share of j-th party
         pub public_shares: Vec<NonZero<Point<E>>>,
+        /// Chain code, for HD-capable key
+        #[serde_as(as = "Option<Base64>")]
+        #[serde(default)]
+        pub chain_code: Option<[u8; 32]>,
     }
 
     /// List of signers
@@ -152,6 +159,7 @@ pub mod export {
     const VERSION: u8 = 1;
 
     /// Format of a decrypted key share
+    #[serde_as]
     #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
     #[serde(bound = "")]
     pub struct KeySharePlaintext<E: Curve> {
@@ -161,6 +169,10 @@ pub mod export {
         pub index: NonZero<Scalar<E>>,
         /// The secret share
         pub secret_share: NonZero<SecretScalar<E>>,
+        /// Chain code, for HD-capable key
+        #[serde_as(as = "Option<Base64>")]
+        #[serde(default)]
+        pub chain_code: Option<[u8; 32]>,
     }
 
     /// Key export request that's intended to be sent from the client

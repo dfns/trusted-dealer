@@ -33,13 +33,21 @@ pub use common::types::{export as types, KeyCurve, KeyProtocol};
 #[cfg(target_arch = "wasm32")]
 use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
-const SUPPORTED_SCHEMES: [types::SupportedScheme; 4] = [
+const SUPPORTED_SCHEMES: [types::SupportedScheme; 6] = [
     types::SupportedScheme {
         protocol: KeyProtocol::Cggmp21,
         curve: KeyCurve::Secp256k1,
     },
     types::SupportedScheme {
         protocol: KeyProtocol::Cggmp21,
+        curve: KeyCurve::Stark,
+    },
+    types::SupportedScheme {
+        protocol: KeyProtocol::Ku23,
+        curve: KeyCurve::Secp256k1,
+    },
+    types::SupportedScheme {
+        protocol: KeyProtocol::Ku23,
         curve: KeyCurve::Stark,
     },
     types::SupportedScheme {
@@ -57,6 +65,7 @@ const SUPPORTED_SCHEMES: [types::SupportedScheme; 4] = [
 pub struct SecretScalar {
     /// Secret key serialized as bytes in big-endian
     be_bytes: zeroize::Zeroizing<Vec<u8>>,
+    chain_code: Option<[u8; 32]>,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -65,6 +74,11 @@ impl SecretScalar {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toBytesBE))]
     pub fn to_bytes_be(&self) -> Vec<u8> {
         (*self.be_bytes).clone()
+    }
+
+    /// Returns a chain code associated with the wallet, if HD derivation was enabled
+    pub fn chain_code(&self) -> Option<Vec<u8>> {
+        self.chain_code.map(|c| c.to_vec())
     }
 }
 
@@ -143,37 +157,49 @@ impl KeyExportContext {
 
         // Depending on the protocol/curve combination, parse key_shares and public_key,
         // perform the interpolation, and return the private key.
-        let secret_scalar = match (response.protocol, response.curve) {
-            (KeyProtocol::Cggmp21, KeyCurve::Secp256k1)
-            | (KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1) => {
+        let (secret_scalar, chain_code) = match (response.protocol, response.curve) {
+            (
+                KeyProtocol::Cggmp21 | KeyProtocol::Ku23 | KeyProtocol::FrostBitcoin,
+                KeyCurve::Secp256k1,
+            ) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_scalar::<curves::Secp256k1>(&key_shares, &public_key)
-                    .context("interpolation failed")?
-                    .as_ref()
-                    .to_be_bytes()
-                    .to_vec()
-                    .into()
+                let chain_code = extract_chain_code(&key_shares)?;
+                let secret_scalar =
+                    interpolate_secret_scalar::<curves::Secp256k1>(&key_shares, &public_key)
+                        .context("interpolation failed")?
+                        .as_ref()
+                        .to_be_bytes()
+                        .to_vec()
+                        .into();
+                (secret_scalar, chain_code)
             }
-            (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
+            (KeyProtocol::Cggmp21 | KeyProtocol::Ku23, KeyCurve::Stark) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_scalar::<curves::Stark>(&key_shares, &public_key)
-                    .context("interpolation failed")?
-                    .as_ref()
-                    .to_be_bytes()
-                    .to_vec()
-                    .into()
+                let chain_code = extract_chain_code(&key_shares)?;
+
+                let secret_scalar =
+                    interpolate_secret_scalar::<curves::Stark>(&key_shares, &public_key)
+                        .context("interpolation failed")?
+                        .as_ref()
+                        .to_be_bytes()
+                        .to_vec()
+                        .into();
+                (secret_scalar, chain_code)
             }
             (KeyProtocol::Frost, KeyCurve::Ed25519) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
-                interpolate_secret_scalar::<curves::Ed25519>(&key_shares, &public_key)
-                    .context("interpolation failed")?
-                    .as_ref()
-                    .to_be_bytes()
-                    .to_vec()
-                    .into()
+                let chain_code = extract_chain_code(&key_shares)?;
+                let secret_scalar =
+                    interpolate_secret_scalar::<curves::Ed25519>(&key_shares, &public_key)
+                        .context("interpolation failed")?
+                        .as_ref()
+                        .to_be_bytes()
+                        .to_vec()
+                        .into();
+                (secret_scalar, chain_code)
             }
             (protocol, curve) => {
                 return Err(Error::new(&alloc::format!(
@@ -185,6 +211,7 @@ impl KeyExportContext {
         };
         Ok(SecretScalar {
             be_bytes: secret_scalar,
+            chain_code,
         })
     }
 }
@@ -236,6 +263,23 @@ fn parse_key_shares<E: Curve>(
     Ok(key_shares_plaintext)
 }
 
+/// Extracts a chain code from the key shares
+///
+/// Returns an error if one of key shares has different chain code from another
+fn extract_chain_code<E: Curve>(
+    key_shares: &[types::KeySharePlaintext<E>],
+) -> Result<Option<[u8; 32]>, Error> {
+    let chain_code = key_shares.first().and_then(|s| s.chain_code);
+    for (i, key_share) in key_shares.iter().enumerate().skip(1) {
+        if chain_code != key_share.chain_code {
+            return Err(Error::new(&format!(
+                "key shares 0 and {i} have different chain code",
+            )));
+        }
+    }
+    Ok(chain_code)
+}
+
 /// Parse the public key
 fn parse_public_key<E: Curve>(public_key_bytes: &Vec<u8>) -> Result<Point<E>, Error> {
     Point::<E>::from_bytes(public_key_bytes).context("cannot parse the public key")
@@ -260,7 +304,7 @@ fn interpolate_secret_scalar<E: Curve>(
         .iter()
         .map(|s| s.index)
         .collect::<Vec<NonZero<_>>>();
-    let secret_shares = key_shares.iter().map(|s| (s.secret_share.clone()));
+    let secret_shares = key_shares.iter().map(|s| s.secret_share.clone());
 
     // Interpolate
     let mut interpolated_secret_scalar = {
@@ -313,7 +357,7 @@ mod tests {
     use alloc::vec::Vec;
 
     use generic_ec::{Curve, NonZero, Point, SecretScalar};
-    use rand::{seq::SliceRandom, CryptoRng, RngCore};
+    use rand::{seq::SliceRandom, CryptoRng, Rng, RngCore};
 
     use super::types;
 
@@ -330,6 +374,7 @@ mod tests {
             .generate_shares(rng)
             .unwrap();
         let public_key = key_shares[0].shared_public_key;
+        let chain_code = rng.gen();
         let key_shares = key_shares
             .into_iter()
             .map(|share| share.into_inner())
@@ -337,6 +382,7 @@ mod tests {
                 version: Default::default(),
                 index: share.share_preimage(share.i).unwrap(),
                 secret_share: share.x,
+                chain_code: Some(chain_code),
             })
             .collect::<Vec<_>>();
 
