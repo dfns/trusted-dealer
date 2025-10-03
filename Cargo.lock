@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-export"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "base64 0.21.7",
  "dfns-trusted-dealer-common",
@@ -286,7 +286,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-import"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "dfns-trusted-dealer-common",
  "ed25519-dalek",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-trusted-dealer-common"
-version = "0.1.1"
+version = "0.3.0"
 dependencies = [
  "aes-gcm",
  "base64 0.21.7",
