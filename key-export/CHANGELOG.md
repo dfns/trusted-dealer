@@ -1,3 +1,8 @@
+## v0.3.0
+* Add support of HD wallets [#21]
+
+[#21]: https://github.com/dfns/trusted-dealer/pull/21
+
 ## v0.2.4
 * fix: add FrostBitcoin to list of supported schemes in export [#20]
 

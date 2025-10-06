@@ -3,6 +3,7 @@ use common::{
     types::{KeyCurve, KeyProtocol},
 };
 use generic_ec::{NonZero, Point, Scalar, SecretScalar};
+use rand::Rng as _;
 
 fn main() {
     print_export_request();
@@ -24,6 +25,7 @@ fn print_export_response() {
         version: common::version::VersionGuard,
         index: NonZero::<Scalar<_>>::random(&mut rng),
         secret_share: NonZero::<SecretScalar<E>>::random(&mut rng),
+        chain_code: Some(rng.gen()),
     }]
     .to_vec();
 

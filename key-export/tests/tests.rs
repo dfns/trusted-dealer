@@ -4,7 +4,7 @@ use common::{
 };
 
 use generic_ec::{Curve, NonZero, Point, Scalar, SecretScalar};
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng, RngCore};
 
 fn random_key<E: Curve>(
     rng: &mut (impl RngCore + CryptoRng),
@@ -19,6 +19,7 @@ fn random_key<E: Curve>(
         .generate_shares(rng)
         .unwrap();
     let public_key = key_shares[0].shared_public_key;
+    let chain_code = rng.gen();
     let key_shares = key_shares
         .into_iter()
         .map(|share| share.into_inner())
@@ -26,6 +27,7 @@ fn random_key<E: Curve>(
             version: Default::default(),
             index: share.share_preimage(share.i).unwrap(),
             secret_share: share.x,
+            chain_code: Some(chain_code),
         })
         .collect::<Vec<_>>();
 
