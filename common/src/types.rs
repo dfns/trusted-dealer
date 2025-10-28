@@ -13,7 +13,8 @@ pub enum KeyProtocol {
     /// Binance EDDSA
     BinanceEddsa,
     /// CGGMP21
-    Cggmp21,
+    #[serde(alias = "CGGMP21")]
+    Cggmp24,
     /// KU23
     Ku23,
     /// FROST

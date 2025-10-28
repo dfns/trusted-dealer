@@ -130,7 +130,7 @@ pub fn build_key_import_request(
         .map_err(|_| Error::new("chain code has invalid length"))?;
 
     match (protocol, curve) {
-        (KeyProtocol::Cggmp21, KeyCurve::Secp256k1)
+        (KeyProtocol::Cggmp24, KeyCurve::Secp256k1)
         | (KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1) => {
             build_key_import_request_for_curve::<curves::Secp256k1>(
                 &mut rng,
@@ -143,7 +143,7 @@ pub fn build_key_import_request(
                 n,
             )
         }
-        (KeyProtocol::Cggmp21, KeyCurve::Stark) => {
+        (KeyProtocol::Cggmp24, KeyCurve::Stark) => {
             build_key_import_request_for_curve::<curves::Stark>(
                 &mut rng,
                 protocol,

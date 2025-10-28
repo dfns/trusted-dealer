@@ -8,10 +8,10 @@ use dfns_key_import::{KeyCurve, KeyProtocol};
 use key_share::Validate;
 use rand::Rng;
 
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1, 3, 5; "cggmp21_secp256k1_t3n5")]
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1, 2, 3; "cggmp21_secp256k1_t2n3")]
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Stark, 3, 5; "cggmp21_stark_t3n5")]
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Stark, 2, 3; "cggmp21_stark_t2n3")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Secp256k1, 3, 5; "cggmp21_secp256k1_t3n5")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Secp256k1, 2, 3; "cggmp21_secp256k1_t2n3")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Stark, 3, 5; "cggmp21_stark_t3n5")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Stark, 2, 3; "cggmp21_stark_t2n3")]
 #[test_case::case(KeyProtocol::Frost, KeyCurve::Ed25519, 3, 5; "frost_ed25519_t3n5")]
 #[test_case::case(KeyProtocol::Frost, KeyCurve::Ed25519, 2, 3; "frost_ed25519_t2n3")]
 fn key_import(protocol: KeyProtocol, curve: KeyCurve, t: u16, n: u16) {
