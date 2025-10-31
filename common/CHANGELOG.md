@@ -1,3 +1,8 @@
+## v0.4.0
+* Rename `types::KeyProtocol::Cggmp21` to `Cggmp24` for consistency [#22]
+
+[#22]: https://github.com/dfns/trusted-dealer/pull/22
+
 ## v0.3.0
 * Add support of HD wallets [#21]
 

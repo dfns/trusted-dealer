@@ -34,8 +34,8 @@ fn random_key<E: Curve>(
     (*public_key, key_shares)
 }
 
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Secp256k1; "cggmp21_secp256k1")]
-#[test_case::case(KeyProtocol::Cggmp21, KeyCurve::Stark; "cggmp21_stark")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Secp256k1; "cggmp21_secp256k1")]
+#[test_case::case(KeyProtocol::Cggmp24, KeyCurve::Stark; "cggmp21_stark")]
 #[test_case::case(KeyProtocol::Frost, KeyCurve::Ed25519; "frost_ed25519")]
 #[test_case::case(KeyProtocol::FrostBitcoin, KeyCurve::Secp256k1; "frost_bitcoin")]
 fn key_export(protocol: KeyProtocol, curve: KeyCurve) {
@@ -86,7 +86,7 @@ fn key_export_inner<E: Curve>(protocol: KeyProtocol, curve: KeyCurve) {
 
 #[test]
 fn exporting_unsupported_scheme_returns_error() {
-    let protocol = KeyProtocol::Cggmp21;
+    let protocol = KeyProtocol::Cggmp24;
     let curve = KeyCurve::Secp256k1;
     type E = generic_ec::curves::Secp256k1;
 

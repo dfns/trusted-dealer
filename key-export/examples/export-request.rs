@@ -47,7 +47,7 @@ fn print_export_response() {
     let resp = dfns_key_export::types::KeyExportResponse {
         min_signers: 3,
         public_key: Point::<E>::zero().to_bytes(true).to_vec(),
-        protocol: KeyProtocol::Cggmp21,
+        protocol: KeyProtocol::Cggmp24,
         curve: KeyCurve::Secp256k1,
         encrypted_shares: encrypted_shares_and_ids,
     };

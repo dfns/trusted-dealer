@@ -35,11 +35,11 @@ use common::wasm_bindgen::{self, prelude::wasm_bindgen};
 
 const SUPPORTED_SCHEMES: [types::SupportedScheme; 6] = [
     types::SupportedScheme {
-        protocol: KeyProtocol::Cggmp21,
+        protocol: KeyProtocol::Cggmp24,
         curve: KeyCurve::Secp256k1,
     },
     types::SupportedScheme {
-        protocol: KeyProtocol::Cggmp21,
+        protocol: KeyProtocol::Cggmp24,
         curve: KeyCurve::Stark,
     },
     types::SupportedScheme {
@@ -159,7 +159,7 @@ impl KeyExportContext {
         // perform the interpolation, and return the private key.
         let (secret_scalar, chain_code) = match (response.protocol, response.curve) {
             (
-                KeyProtocol::Cggmp21 | KeyProtocol::Ku23 | KeyProtocol::FrostBitcoin,
+                KeyProtocol::Cggmp24 | KeyProtocol::Ku23 | KeyProtocol::FrostBitcoin,
                 KeyCurve::Secp256k1,
             ) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
@@ -174,7 +174,7 @@ impl KeyExportContext {
                         .into();
                 (secret_scalar, chain_code)
             }
-            (KeyProtocol::Cggmp21 | KeyProtocol::Ku23, KeyCurve::Stark) => {
+            (KeyProtocol::Cggmp24 | KeyProtocol::Ku23, KeyCurve::Stark) => {
                 let key_shares = parse_key_shares(&decrypted_key_shares_and_ids)?;
                 let public_key = parse_public_key(&response.public_key)?;
                 let chain_code = extract_chain_code(&key_shares)?;
