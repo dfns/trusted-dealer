@@ -13,72 +13,87 @@ env:
 
 jobs:
   publish-import:
-    name: Build and Publish NPM package
-    environment: npmjs.com
+    name: Build and Publish NPM package (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - target: nodejs
+            environment: dfns-key-import-nodejs
+            url: https://www.npmjs.com/package/@dfns/dfns-key-import-nodejs
+          - target: bundler
+            environment: dfns-key-import-bundler
+            url: https://www.npmjs.com/package/@dfns/dfns-key-import-bundler
+    permissions:
+      id-token: write
+      contents: read
+    environment:
+      name: ${{ matrix.environment }}
+      url: ${{ matrix.url }}
     runs-on: ubuntu-latest
     if: >-
       github.ref_type == 'tag'
       && startsWith(github.ref_name, 'key-import/v')
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Install wasm32-unknown-unknown toolchain
       run: rustup target add wasm32-unknown-unknown
     - name: Install wasm-pack
-      uses: baptiste0928/cargo-install@v1
+      uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3.4.0
       with:
         crate: wasm-pack
     - name: wasm-pack build
       run: |
-        wasm-pack build --target nodejs --out-dir pkg-nodejs --scope dfns key-import
-        wasm-pack build --target bundler --out-dir pkg-bundler --scope dfns key-import
-        sed -i 's/@dfns\/dfns-key-import/@dfns\/dfns-key-import-nodejs/g' key-import/pkg-nodejs/package.json
-        sed -i 's/@dfns\/dfns-key-import/@dfns\/dfns-key-import-bundler/g' key-import/pkg-bundler/package.json
-
-    - uses: actions/setup-node@v4
+        wasm-pack build --target ${{ matrix.target }} --out-dir pkg-${{ matrix.target }} --scope dfns key-import
+        sed -i 's/@dfns\/dfns-key-import/@dfns\/dfns-key-import-${{ matrix.target }}/g' key-import/pkg-${{ matrix.target }}/package.json
+    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: |
-        npm publish ./key-import/pkg-nodejs --access public
-        npm publish ./key-import/pkg-bundler --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      run: npm publish ./key-import/pkg-${{ matrix.target }} --access public
 
   publish-export:
-    name: Build and Publish NPM package
-    environment: npmjs.com
+    name: Build and Publish NPM package (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - target: nodejs
+            environment: dfns-key-export-nodejs
+            url: https://www.npmjs.com/package/@dfns/dfns-key-export-nodejs
+          - target: bundler
+            environment: dfns-key-export-bundler
+            url: https://www.npmjs.com/package/@dfns/dfns-key-export-bundler
+    environment:
+      name: ${{ matrix.environment }}
+      url: ${{ matrix.url }}
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     if: >-
       github.ref_type == 'tag'
       && startsWith(github.ref_name, 'key-export/v')
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Install wasm32-unknown-unknown toolchain
       run: rustup target add wasm32-unknown-unknown
     - name: Install wasm-pack
-      uses: baptiste0928/cargo-install@v1
+      uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3.4.0
       with:
         crate: wasm-pack
     - name: wasm-pack build
       run: |
-        wasm-pack build --target nodejs --out-dir pkg-nodejs --scope dfns key-export
-        wasm-pack build --target bundler --out-dir pkg-bundler --scope dfns key-export
-        sed -i 's/@dfns\/dfns-key-export/@dfns\/dfns-key-export-nodejs/g' key-export/pkg-nodejs/package.json
-        sed -i 's/@dfns\/dfns-key-export/@dfns\/dfns-key-export-bundler/g' key-export/pkg-bundler/package.json
-    - uses: actions/setup-node@v4
+        wasm-pack build --target ${{ matrix.target }} --out-dir pkg-${{ matrix.target }} --scope dfns key-export
+        sed -i 's/@dfns\/dfns-key-export/@dfns\/dfns-key-export-${{ matrix.target }}/g' key-export/pkg-${{ matrix.target }}/package.json
+    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: latest
         registry-url: https://registry.npmjs.org
     - name: Publish NPM package
-      run: |
-        npm publish ./key-export/pkg-nodejs --access public
-        npm publish ./key-export/pkg-bundler --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      run: npm publish ./key-export/pkg-${{ matrix.target }} --access public

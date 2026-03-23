@@ -18,8 +18,8 @@ jobs:
           - dfns-key-import
           - dfns-key-export
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Run tests
@@ -27,8 +27,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Run tests
@@ -36,14 +36,14 @@ jobs:
   check-fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Check formatting
       run: cargo fmt --all -- --check
   check-clippy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Run clippy
@@ -53,8 +53,8 @@ jobs:
   build-wasm:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         cache-on-failure: "true"
     - name: Install wasm32-unknown-unknown toolchain
@@ -66,7 +66,7 @@ jobs:
       run:
         cargo check -p dfns-key-export --target wasm32-unknown-unknown
     - name: Install wasm-pack
-      uses: baptiste0928/cargo-install@v1
+      uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3.4.0
       with:
         crate: wasm-pack
     - name: wasm-pack an example project for import client
@@ -76,6 +76,6 @@ jobs:
   check-changelog:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Check changelogs
       run: ./.github/changelog.sh
