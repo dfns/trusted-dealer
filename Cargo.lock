@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-export"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "base64 0.21.7",
  "dfns-trusted-dealer-common",
@@ -286,7 +286,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-key-import"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "dfns-trusted-dealer-common",
  "ed25519-dalek",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "dfns-trusted-dealer-common"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "aes-gcm",
  "base64 0.21.7",
@@ -459,9 +459,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec"
-version = "0.4.5"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8de1099ac0b4d87261d67ff5d4ed400af617a1da40b58908d759b9cf5fd8ed27"
+checksum = "6d693ffb53818f267a4c20e06f161aee3569a4ebaec5b9105d2fd7490b79fb53"
 dependencies = [
  "curve25519-dalek",
  "generic-ec-core",
@@ -477,9 +477,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-core"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcba5fdf70cc3ce5805c487f8523b4ceeb32e8ec5237c71ffd93c1ca47a97fee"
+checksum = "ffea0573b3bdde9a0bbbf17433b19f9628942e075d723702c2f495f0a2f65268"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -490,9 +490,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-curves"
-version = "0.2.4"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c7c6d23001a5eb60eec2b785a63d2ca965fdfbaf3314b3b46df047398369e28"
+checksum = "ffbc925fd3e3679dc46eb028029be23f3eb215f9392847d10223d853a459ab3c"
 dependencies = [
  "curve25519-dalek",
  "elliptic-curve",
@@ -508,9 +508,9 @@ dependencies = [
 
 [[package]]
 name = "generic-ec-zkp"
-version = "0.4.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd3945c585fdddba3f86bda4e4cfba22d5e255001b3e145c9db305ad096c6d88"
+checksum = "b19b88bd3d9b24d30d21ee91c0feb9480e4fec008a1b8b9bf2c16e0afbf43a2e"
 dependencies = [
  "generic-array",
  "generic-ec",
@@ -641,9 +641,9 @@ dependencies = [
 
 [[package]]
 name = "key-share"
-version = "0.4.3"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51f32a511457947ec927d7372e71f5bf41476613a50456174d3597e4c1a40e1e"
+checksum = "4c6ef14aa29a4d7cac8026894c16821e6dee20bfa8c8f7bb9d2820e05e756652"
 dependencies = [
  "displaydoc",
  "generic-ec",
