@@ -169,8 +169,8 @@ pub fn build_key_import_request(
         }
         (p, c) => Err(Error::new(&alloc::format!(
             "protocol {:?} using curve {:?} is not supported for key import",
-            &p,
-            &c
+            p,
+            c
         ))),
     }
 }

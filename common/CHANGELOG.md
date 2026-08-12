@@ -1,3 +1,8 @@
+## v0.5.0
+* Update `generic-ec` to v0.5 [#24]
+
+[#24]: https://github.com/dfns/trusted-dealer/pull/24
+
 ## v0.4.0
 * Rename `types::KeyProtocol::Cggmp21` to `Cggmp24` for consistency [#22]
 
