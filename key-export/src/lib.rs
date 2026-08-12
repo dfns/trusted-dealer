@@ -204,8 +204,8 @@ impl KeyExportContext {
             (protocol, curve) => {
                 return Err(Error::new(&alloc::format!(
                     "protocol {:?} using curve {:?} is not supported for key export",
-                    &protocol,
-                    &curve
+                    protocol,
+                    curve
                 )));
             }
         };
